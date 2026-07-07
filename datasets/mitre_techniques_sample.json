@@ -1,0 +1,82 @@
+[
+  {
+    "technique_id": "T1566",
+    "technique_name": "Phishing",
+    "tactic": "initial_access",
+    "description": "Adversaries may send phishing messages to gain access to victim systems.",
+    "subtechniques": ["T1566.001", "T1566.002", "T1566.003"],
+    "platforms": ["Linux", "macOS", "Windows", "SaaS", "Office 365"],
+    "detection": "Monitor for suspicious email activity, attachment execution, and link clicks.",
+    "mitigation": "User Training, Email Filtering, Anti-virus"
+  },
+  {
+    "technique_id": "T1059",
+    "technique_name": "Command and Scripting Interpreter",
+    "tactic": "execution",
+    "description": "Adversaries may abuse command and script interpreters to execute commands.",
+    "subtechniques": ["T1059.001", "T1059.003", "T1059.005"],
+    "platforms": ["Linux", "macOS", "Windows"],
+    "detection": "Monitor process creation events for scripting interpreter execution.",
+    "mitigation": "Code Signing, Disable or Remove Feature or Program"
+  },
+  {
+    "technique_id": "T1053",
+    "technique_name": "Scheduled Task/Job",
+    "tactic": "persistence",
+    "description": "Adversaries may abuse task scheduling functionality to facilitate initial or recurring execution of malicious code.",
+    "subtechniques": ["T1053.003", "T1053.005"],
+    "platforms": ["Linux", "macOS", "Windows"],
+    "detection": "Monitor scheduled task creation and modification events.",
+    "mitigation": "Audit, User Account Management"
+  },
+  {
+    "technique_id": "T1068",
+    "technique_name": "Exploitation for Privilege Escalation",
+    "tactic": "privilege_escalation",
+    "description": "Adversaries may exploit software vulnerabilities in an attempt to elevate privileges.",
+    "subtechniques": [],
+    "platforms": ["Linux", "macOS", "Windows"],
+    "detection": "Monitor for exploitation artifacts and unexpected privilege changes.",
+    "mitigation": "Application Isolation and Sandboxing, Exploit Protection"
+  },
+  {
+    "technique_id": "T1027",
+    "technique_name": "Obfuscated Files or Information",
+    "tactic": "defense_evasion",
+    "description": "Adversaries may attempt to make an executable or file difficult to discover or analyze.",
+    "subtechniques": ["T1027.001", "T1027.002", "T1027.004"],
+    "platforms": ["Linux", "macOS", "Windows"],
+    "detection": "Monitor for high entropy files and obfuscated script execution.",
+    "mitigation": "Antivirus/Antimalware, Behavior Prevention on Endpoint"
+  },
+  {
+    "technique_id": "T1003",
+    "technique_name": "OS Credential Dumping",
+    "tactic": "credential_access",
+    "description": "Adversaries may attempt to dump credentials to obtain account login and credential material.",
+    "subtechniques": ["T1003.001", "T1003.002", "T1003.003"],
+    "platforms": ["Linux", "macOS", "Windows"],
+    "detection": "Monitor for lsass.exe access, SAM file reads, and credential dumping tools.",
+    "mitigation": "Credential Access Protection, Privileged Account Management"
+  },
+  {
+    "technique_id": "T1021",
+    "technique_name": "Remote Services",
+    "tactic": "lateral_movement",
+    "description": "Adversaries may use valid accounts to log into a service specifically designed to accept remote connections.",
+    "subtechniques": ["T1021.001", "T1021.002", "T1021.004"],
+    "platforms": ["Linux", "macOS", "Windows"],
+    "detection": "Monitor for unusual remote service authentication and connections.",
+    "mitigation": "Limit Access to Resource Over Network, Multi-factor Authentication"
+  },
+  {
+    "technique_id": "T1486",
+    "technique_name": "Data Encrypted for Impact",
+    "tactic": "impact",
+    "description": "Adversaries may encrypt data on target systems or on large numbers of systems in a network to interrupt availability.",
+    "subtechniques": [],
+    "platforms": ["Linux", "macOS", "Windows"],
+    "detection": "Monitor for mass file modifications, shadow copy deletion, and encryption patterns.",
+    "mitigation": "Data Backup, User Account Management"
+  }
+]

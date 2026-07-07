@@ -1,0 +1,360 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+:root {
+  --color-bg:           #090E17;
+  --color-bg-2:         #0c1424;
+  --color-surface:      #0c1424;
+  --color-surface-2:    #121d33;
+  --color-surface-3:    #172642;
+  --color-border:       #1a2942;
+  --color-border-2:     #223759;
+  --color-border-3:     #2b4670;
+
+  --color-primary:      #8EDDBE;
+  --color-primary-dim:  #73bfa1;
+  --color-primary-dark: #4f9378;
+  --color-primary-glow: rgba(142, 221, 190, 0.18);
+
+  --color-secondary:    #243C5A;
+  --color-secondary-dim:#1d314b;
+  --color-secondary-glow: rgba(36, 60, 90, 0.18);
+
+  --color-danger:       #E75A43;
+  --color-danger-dim:   #c54430;
+  --color-danger-glow:  rgba(231, 90, 67, 0.2);
+
+  --color-success:      #8EDDBE;
+  --color-success-dim:  #73bfa1;
+  --color-success-glow: rgba(142, 221, 190, 0.18);
+
+  --color-warning:      #FFB040;
+  --color-warning-dim:  #db912d;
+  --color-warning-glow: rgba(255, 176, 64, 0.18);
+
+  --color-muted:        #3d566e;
+  --color-text:         #E2E8F0;
+  --color-text-2:       #8FA3BF;
+  --color-text-3:       #4A6480;
+
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  --radius-sm:  3px;
+  --radius-md:  6px;
+  --radius-lg:  10px;
+  --radius-xl:  14px;
+  --radius-2xl: 20px;
+
+  --shadow-glow-primary: 0 0 24px rgba(142, 221, 190, 0.2), 0 0 64px rgba(142, 221, 190, 0.06);
+  --shadow-glow-danger:  0 0 24px rgba(231, 90, 67, 0.2), 0 0 64px rgba(231, 90, 67, 0.06);
+  --shadow-glow-success: 0 0 24px rgba(142, 221, 190, 0.2);
+  --shadow-card:         0 4px 32px rgba(0, 0, 0, 0.6), 0 1px 0 rgba(255,255,255,0.03) inset;
+}
+
+/* ─── Base Reset ─────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── Scrollbar ──────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--color-bg); }
+::-webkit-scrollbar-thumb { background: var(--color-border-3); border-radius: 100px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-muted); }
+
+/* ─── Typography ─────────────────────────────────────── */
+code, pre, kbd, samp { font-family: var(--font-mono); }
+
+/* ─── Focus ──────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ══════════════════════════════════════════════════════
+   KEYFRAME ANIMATIONS
+══════════════════════════════════════════════════════ */
+
+@keyframes pulse-ring {
+  0%   { transform: scale(0.95); opacity: 0.8; }
+  50%  { transform: scale(1.05); opacity: 0.4; }
+  100% { transform: scale(0.95); opacity: 0.8; }
+}
+
+@keyframes orbit {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes orbit-reverse {
+  from { transform: rotate(360deg); }
+  to   { transform: rotate(0deg); }
+}
+
+@keyframes scan-line {
+  0%   { transform: translateY(-100%); opacity: 0; }
+  10%  { opacity: 0.6; }
+  90%  { opacity: 0.6; }
+  100% { transform: translateY(400%); opacity: 0; }
+}
+
+@keyframes data-flow {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(0, 229, 255, 0.3), 0 0 24px rgba(0, 229, 255, 0.1); }
+  50%       { box-shadow: 0 0 16px rgba(0, 229, 255, 0.6), 0 0 48px rgba(0, 229, 255, 0.2); }
+}
+
+@keyframes danger-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(255, 77, 109, 0.3); }
+  50%       { box-shadow: 0 0 20px rgba(255, 77, 109, 0.7), 0 0 40px rgba(255, 77, 109, 0.3); }
+}
+
+@keyframes float-up {
+  0%   { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes hex-grid-pan {
+  0%   { background-position: 0px 0px; }
+  100% { background-position: 60px 60px; }
+}
+
+@keyframes status-flash {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}
+
+@keyframes ripple {
+  0%   { transform: scale(0.8); opacity: 1; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+
+@keyframes counter-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes sweep-right {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(100%); }
+}
+
+/* ══════════════════════════════════════════════════════
+   UTILITY CLASSES
+══════════════════════════════════════════════════════ */
+
+/* Glass card */
+.glass {
+  background: rgba(7, 16, 34, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--color-border);
+}
+
+.glass-strong {
+  background: rgba(4, 13, 26, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--color-border-2);
+}
+
+/* HUD border — cyan top accent */
+.hud-border {
+  border: 1px solid var(--color-border-2);
+  border-top: 1px solid var(--color-primary);
+  box-shadow: 0 0 0 1px rgba(0, 229, 255, 0.04) inset, var(--shadow-card);
+}
+
+.hud-border-subtle {
+  border: 1px solid var(--color-border);
+  border-top: 1px solid rgba(0, 229, 255, 0.4);
+}
+
+/* Terminal screen effect */
+.terminal-screen {
+  position: relative;
+  overflow: hidden;
+}
+.terminal-screen::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 229, 255, 0.012) 2px,
+    rgba(0, 229, 255, 0.012) 4px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Hex grid background */
+.hex-grid-bg {
+  background-image:
+    linear-gradient(rgba(0, 229, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 229, 255, 0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+  animation: hex-grid-pan 20s linear infinite;
+}
+
+/* Glow effects */
+.glow-primary { box-shadow: var(--shadow-glow-primary); }
+.glow-danger  { box-shadow: var(--shadow-glow-danger); }
+.glow-success { box-shadow: var(--shadow-glow-success); }
+
+.glow-pulse-primary { animation: glow-pulse 2.5s ease-in-out infinite; }
+.glow-pulse-danger  { animation: danger-pulse 1.8s ease-in-out infinite; }
+
+/* Text gradients */
+.text-gradient-primary {
+  background: linear-gradient(135deg, #00E5FF 0%, #0099cc 60%, #7C3AED 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.text-gradient-danger {
+  background: linear-gradient(135deg, #FF4D6D, #FF8C42);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Scan-line animation */
+.animate-scan {
+  position: relative;
+  overflow: hidden;
+}
+.animate-scan::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(0, 229, 255, 0.6), transparent);
+  animation: scan-line 4s ease-in-out infinite;
+}
+
+/* Blink cursor */
+.cursor-blink::after {
+  content: '▋';
+  animation: blink 1.2s step-end infinite;
+  color: var(--color-primary);
+  margin-left: 2px;
+}
+
+/* Pulse ring */
+.pulse-ring {
+  animation: pulse-ring 3s ease-in-out infinite;
+}
+
+/* Orbit */
+.orbit { animation: orbit 8s linear infinite; }
+.orbit-reverse { animation: orbit-reverse 12s linear infinite; }
+.orbit-slow { animation: orbit 20s linear infinite; }
+
+/* Status badges */
+.status-live {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.status-live-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--color-success);
+  animation: status-flash 1.5s ease-in-out infinite;
+  box-shadow: 0 0 6px var(--color-success);
+}
+
+/* Sweep shimmer on hover */
+.sweep-hover {
+  position: relative;
+  overflow: hidden;
+}
+.sweep-hover::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(0, 229, 255, 0.08), transparent);
+  transition: none;
+}
+.sweep-hover:hover::before {
+  animation: sweep-right 0.5s ease forwards;
+}
+
+/* ─── Tailwind v4 theme extension ────────────────────── */
+@theme {
+  --color-bg:          #090E17;
+  --color-surface:     #0c1424;
+  --color-surface-2:   #121d33;
+  --color-border:      #1a2942;
+  --color-primary:     #8EDDBE;
+  --color-secondary:   #243C5A;
+  --color-danger:      #E75A43;
+  --color-success:     #8EDDBE;
+  --color-warning:     #FFB040;
+  --color-muted:       #3d566e;
+  --color-text:        #E2E8F0;
+  --color-text-2:      #8FA3BF;
+
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+/* ─── ReactFlow overrides ────────────────────────────── */
+.react-flow__background { background-color: #030b19 !important; }
+.react-flow__controls {
+  background: #071022 !important;
+  border: 1px solid #162030 !important;
+  border-radius: 8px !important;
+  overflow: hidden;
+}
+.react-flow__controls-button {
+  background: #071022 !important;
+  border-color: #162030 !important;
+  color: #8FA3BF !important;
+}
+.react-flow__controls-button:hover { background: #0c1828 !important; color: #E2E8F0 !important; }
+.react-flow__minimap { background: #030b19 !important; border: 1px solid #162030 !important; border-radius: 8px !important; }
+.react-flow__edge-path { stroke: #243650; }
+.react-flow__attribution { display: none !important; }
