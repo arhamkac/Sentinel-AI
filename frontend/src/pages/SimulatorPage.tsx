@@ -6,7 +6,7 @@ import {
   Shield, Radio, Lock, Skull, Database, Globe, Key,
 } from 'lucide-react'
 import { PageContainer } from '@/components/layout'
-import { Card, CardHeader, CardTitle, CardContent, Badge, SeverityBadge } from '@/components/ui'
+import { SeverityBadge } from '@/components/ui'
 import { simulatorService } from '@/services/simulator.service'
 import type { SimulationScenario, SimulationRun } from '@/types'
 
@@ -106,12 +106,18 @@ export function SimulatorPage() {
 
   return (
     <PageContainer>
+      {/* Page header */}
+      <div>
+        <div className="text-[9px] font-mono uppercase tracking-[0.15em] mb-1" style={{ color: '#3d566e' }}>Adversary Emulation Engine</div>
+        <h1 className="text-xl font-bold font-mono" style={{ color: '#E2E8F0' }}>Attack Simulator</h1>
+        <p className="text-[11px] font-mono mt-0.5" style={{ color: '#8FA3BF' }}>Safely simulate real-world attack scenarios to test detection capabilities</p>
+      </div>
+
       {/* Warning banner */}
-      {/* Warning banner */}
-      <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-warning/25 bg-warning/5 text-xs font-mono">
-        <AlertTriangle className="w-4 h-4 text-warning shrink-0" />
-        <span className="text-warning font-bold uppercase tracking-widest">Safe Simulation Mode</span>
-        <span className="text-[#8FA3BF] opacity-70 ml-1">All events are synthetic and labeled as simulated. No real attacks are performed.</span>
+      <div className="flex items-center gap-3 px-5 py-3 rounded-2xl border text-[11px] font-mono" style={{ borderColor: '#FFB040' + '30', background: '#FFB040' + '08' }}>
+        <AlertTriangle className="w-4 h-4 shrink-0" style={{ color: '#FFB040' }} />
+        <span className="font-bold uppercase tracking-widest" style={{ color: '#FFB040' }}>Safe Simulation Mode</span>
+        <span style={{ color: '#8FA3BF', opacity: 0.7 }} className="ml-1">All events are synthetic and labeled as simulated. No real attacks are performed.</span>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">

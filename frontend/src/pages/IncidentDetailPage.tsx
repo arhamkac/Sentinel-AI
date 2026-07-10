@@ -84,8 +84,12 @@ export function IncidentDetailPage() {
 
   return (
     <PageContainer>
-      {/* Back */}
-      <Link to="/incidents" className="inline-flex items-center gap-1.5 text-xs text-[#64748B] hover:text-[#E5E7EB] transition-colors mb-1">
+      {/* Back link */}
+      <Link to="/incidents" className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider transition-colors"
+        style={{ color: '#3d566e' }}
+        onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = '#00D9B4' }}
+        onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = '#3d566e' }}
+      >
         <ChevronLeft className="w-3.5 h-3.5" />
         All Incidents
       </Link>
@@ -94,7 +98,8 @@ export function IncidentDetailPage() {
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="flex-1 min-w-0 space-y-2">
-            <h1 className="text-xl font-semibold text-[#E5E7EB] leading-snug">{display.title}</h1>
+            <div className="text-[9px] font-mono uppercase tracking-[0.15em]" style={{ color: '#3d566e' }}>Incident Response</div>
+            <h1 className="text-xl font-bold font-mono" style={{ color: '#E2E8F0' }}>{display.title}</h1>
             <div className="flex items-center gap-2 flex-wrap">
               <SeverityBadge severity={display.severity} dot />
               <StatusBadge status={display.status} />

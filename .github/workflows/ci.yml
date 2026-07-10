@@ -25,6 +25,20 @@ jobs:
 
   backend:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: sentinel_ai
+          POSTGRES_USER: sentinel
+          POSTGRES_PASSWORD: sentinel
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     defaults:
       run:
         working-directory: backend

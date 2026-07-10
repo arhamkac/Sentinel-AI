@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Eye, EyeOff, Lock, Mail, Shield, Radio, Sparkles } from 'lucide-react'
+import { Eye, EyeOff, Lock, Mail, Shield, Sparkles } from 'lucide-react'
 import { Input } from '@/components/ui'
 import { authService } from '@/services/auth.service'
 import { useAuthStore } from '@/stores/auth.store'
@@ -47,7 +47,7 @@ function PlexusBackground() {
     }
 
     // Mouse tracking
-    let mouse = { x: -1000, y: -1000 }
+    const mouse = { x: -1000, y: -1000 }
     const handleMouseMove = (e: MouseEvent) => {
       mouse.x = e.clientX
       mouse.y = e.clientY

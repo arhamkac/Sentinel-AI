@@ -1,13 +1,20 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { Search, Filter, AlertTriangle, ArrowRight, RefreshCw } from 'lucide-react'
+import { AlertTriangle, ArrowRight, Search, Filter, RefreshCw } from 'lucide-react'
 import { PageContainer } from '@/components/layout'
-import { Card, CardContent, Input, Button, Badge, SeverityBadge, StatusBadge, SkeletonCard } from '@/components/ui'
+import { useQuery } from '@tanstack/react-query'
 import { incidentsService } from '@/services/incidents.service'
-import { formatRelativeTime } from '@/lib/utils'
 import type { Incident } from '@/types'
+
+const PRIMARY = '#00D9B4'
+const WARN    = '#FFB040'
+const DANGER  = '#E75A43'
+const DIM     = '#3d566e'
+const MUTED   = '#8FA3BF'
+const BRIGHT  = '#E2E8F0'
+const SURFACE = '#071022'
+const BORDER  = '#162030'
 
 const MOCK_INCIDENTS: Incident[] = [
   { id:'1', title:'Ransomware Deployment Attempt on DC-01', description:'Attacker used phishing to gain initial access before attempting ransomware deployment.', severity:'critical', status:'investigating', affected_assets:['DC-01','FS-02'], affected_users:['john.doe'], mitre_techniques:[{technique_id:'T1566',technique_name:'Phishing',tactic:'initial_access',confidence:0.95}], event_count:247, organization_id:'org-1', created_at: new Date(Date.now()-3600000).toISOString(), updated_at: new Date().toISOString() },
@@ -17,155 +24,154 @@ const MOCK_INCIDENTS: Incident[] = [
   { id:'5', title:'Scheduled Task Persistence', description:'Malicious scheduled task created for persistence', severity:'medium', status:'resolved', affected_assets:['WS-03'], affected_users:['charlie.davis'], mitre_techniques:[{technique_id:'T1053',technique_name:'Scheduled Task/Job',tactic:'persistence',confidence:0.85}], event_count:18, organization_id:'org-1', created_at: new Date(Date.now()-86400000).toISOString(), updated_at: new Date().toISOString() },
 ]
 
-const SEVERITY_OPTIONS = ['', 'critical', 'high', 'medium', 'low', 'info']
-const STATUS_OPTIONS = ['', 'open', 'investigating', 'contained', 'resolved', 'closed']
+function severityColor(s: string) {
+  if (s === 'critical') return DANGER
+  if (s === 'high')     return WARN
+  if (s === 'medium')   return '#7C3AED'
+  return DIM
+}
+
+function statusColor(s: string) {
+  if (s === 'resolved' || s === 'closed') return PRIMARY
+  if (s === 'contained')                  return WARN
+  if (s === 'investigating')              return WARN
+  return MUTED
+}
 
 export function IncidentsPage() {
   const [search, setSearch] = useState('')
-  const [severity, setSeverity] = useState('')
-  const [status, setStatus] = useState('')
-  const [page, setPage] = useState(1)
+  const [severityFilter, setSeverityFilter] = useState('')
 
-  const { data, isLoading, refetch } = useQuery({
-    queryKey: ['incidents', { search, severity, status, page }],
-    queryFn: () => incidentsService.list({ search, severity, status, page, page_size: 20 }),
+  const { data, refetch, isLoading } = useQuery({
+    queryKey: ['incidents', { search, severity: severityFilter }],
+    queryFn: () => incidentsService.list({ search, severity: severityFilter, page: 1, page_size: 20 }),
   })
 
   const incidents = data?.items ?? MOCK_INCIDENTS
+  const filtered  = incidents.filter(i =>
+    (!search || i.title.toLowerCase().includes(search.toLowerCase())) &&
+    (!severityFilter || i.severity === severityFilter)
+  )
+
+  const stats = [
+    { label: 'Total Incidents',  value: filtered.length.toString(),                                              color: BRIGHT },
+    { label: 'Critical',         value: filtered.filter(i => i.severity === 'critical').length.toString(),       color: DANGER },
+    { label: 'High',             value: filtered.filter(i => i.severity === 'high').length.toString(),           color: WARN   },
+    { label: 'Under Review',     value: filtered.filter(i => i.status === 'investigating').length.toString(),    color: PRIMARY },
+  ]
 
   return (
-    <PageContainer
-      title="Incidents"
-      description="All security incidents requiring investigation"
-      action={
-        <Button variant="ghost" size="icon" onClick={() => refetch()}>
-          <RefreshCw className="w-4 h-4" />
-        </Button>
-      }
-    >
-      {/* Filters */}
-      <Card>
-        <CardContent className="py-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex-1 min-w-[200px]">
-              <Input
-                placeholder="Search incidents…"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                leftIcon={<Search className="w-4 h-4" />}
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-[#3d566e]" />
-              <select
-                value={severity}
-                onChange={e => setSeverity(e.target.value)}
-                className="h-9 rounded-lg bg-surface border border-border text-[#E2E8F0] text-sm px-3 focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer"
-              >
-                <option value="">All Severities</option>
-                {SEVERITY_OPTIONS.filter(Boolean).map(s => (
-                  <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
-                ))}
-              </select>
-              <select
-                value={status}
-                onChange={e => setStatus(e.target.value)}
-                className="h-9 rounded-lg bg-surface border border-border text-[#E2E8F0] text-sm px-3 focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer"
-              >
-                <option value="">All Statuses</option>
-                {STATUS_OPTIONS.filter(Boolean).map(s => (
-                  <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
-                ))}
-              </select>
-            </div>
+    <PageContainer>
+      {/* Page header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="text-[9px] font-mono uppercase tracking-[0.15em] mb-1" style={{ color: DIM }}>Security Operations Center</div>
+          <h1 className="text-xl font-bold font-mono" style={{ color: BRIGHT }}>Incident Management</h1>
+          <p className="text-[11px] font-mono mt-0.5" style={{ color: MUTED }}>Active security incidents requiring investigation and response</p>
+        </div>
+        <button onClick={() => refetch()}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl border text-[11px] font-mono font-bold uppercase tracking-widest transition-all hover:brightness-110"
+          style={{ borderColor: PRIMARY + '40', background: PRIMARY + '10', color: PRIMARY }}>
+          <RefreshCw className="w-3.5 h-3.5" />
+          Refresh
+        </button>
+      </div>
+
+      {/* Stats row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {stats.map((s, i) => (
+          <div key={i} className="px-5 py-4 rounded-2xl border" style={{ background: SURFACE, borderColor: BORDER }}>
+            <div className="text-[9px] font-mono uppercase tracking-widest mb-1" style={{ color: DIM }}>{s.label}</div>
+            <div className="text-2xl font-bold font-mono" style={{ color: s.color }}>{s.value}</div>
           </div>
-        </CardContent>
-      </Card>
+        ))}
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-3 px-5 py-3 rounded-2xl border" style={{ background: SURFACE, borderColor: BORDER }}>
+        <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+          <Search style={{ width: 13, height: 13, color: DIM }} />
+          <input
+            className="bg-transparent flex-1 text-[11px] font-mono outline-none"
+            style={{ color: BRIGHT }}
+            placeholder="Search incidents..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <Filter style={{ width: 12, height: 12, color: DIM }} />
+          <select
+            className="bg-transparent text-[11px] font-mono outline-none cursor-pointer"
+            style={{ color: MUTED }}
+            value={severityFilter}
+            onChange={e => setSeverityFilter(e.target.value)}
+          >
+            <option value="" style={{ background: SURFACE }}>All Severities</option>
+            {['critical','high','medium','low'].map(s => (
+              <option key={s} value={s} style={{ background: SURFACE }}>{s.toUpperCase()}</option>
+            ))}
+          </select>
+        </div>
+      </div>
 
       {/* Incident list */}
-      {isLoading ? (
-        <div className="flex flex-col gap-3">
-          {[...Array(5)].map((_, i) => <SkeletonCard key={i} />)}
-        </div>
-      ) : incidents.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-[#3d566e]">
-          <AlertTriangle className="w-10 h-10 mb-3 opacity-30" />
-          <p className="text-sm">No incidents match your filters</p>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-2">
-          {incidents.map((incident, i) => (
-            <IncidentRow key={incident.id} incident={incident} index={i} />
-          ))}
-        </div>
-      )}
+      <div className="space-y-3">
+        {isLoading ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="h-20 rounded-2xl animate-pulse" style={{ background: SURFACE }} />
+          ))
+        ) : filtered.map((incident, idx) => (
+          <motion.div
+            key={incident.id}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: idx * 0.04 }}
+          >
+            <Link to={`/incidents/${incident.id}`}>
+              <div className="flex items-start gap-4 px-5 py-4 rounded-2xl border transition-all hover:brightness-110 group"
+                style={{ background: SURFACE, borderColor: BORDER, borderLeftWidth: 2, borderLeftColor: severityColor(incident.severity) }}>
 
-      {/* Pagination */}
-      {data && data.pages > 1 && (
-        <div className="flex items-center justify-center gap-2 pt-4">
-          <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage(p => p - 1)}>
-            Previous
-          </Button>
-          <span className="text-xs text-[#3d566e]">Page {page} of {data.pages}</span>
-          <Button variant="outline" size="sm" disabled={page === data.pages} onClick={() => setPage(p => p + 1)}>
-            Next
-          </Button>
-        </div>
-      )}
-    </PageContainer>
-  )
-}
-
-function IncidentRow({ incident, index }: { incident: Incident; index: number }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.03 }}
-    >
-      <Link to={`/incidents/${incident.id}`}>
-        <Card hover className="group">
-          <CardContent className="py-4">
-            <div className="flex items-start gap-4">
-              {/* Severity indicator */}
-              <div className="w-1 self-stretch rounded-full shrink-0"
-                style={{
-                  background: incident.severity === 'critical' ? '#FF4D6D'
-                    : incident.severity === 'high' ? '#F97316'
-                    : incident.severity === 'medium' ? '#F59E0B'
-                    : '#10D9A0'
-                }}
-              />
-
-              {/* Main content */}
-              <div className="flex-1 min-w-0 space-y-2">
-                <div className="flex items-start justify-between gap-4">
-                  <h3 className="text-sm font-semibold text-[#E2E8F0] group-hover:text-[#00E5FF] transition-colors leading-snug">
-                    {incident.title}
-                  </h3>
-                  <ArrowRight className="w-4 h-4 text-[#3d566e] group-hover:text-[#00E5FF] shrink-0 transition-colors mt-0.5" />
+                {/* Severity icon */}
+                <div className="p-2 rounded-xl mt-0.5 shrink-0"
+                  style={{ background: severityColor(incident.severity) + '15' }}>
+                  <AlertTriangle style={{ width: 14, height: 14, color: severityColor(incident.severity) }} />
                 </div>
-                <p className="text-xs text-[#3d566e] line-clamp-1">{incident.description}</p>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <SeverityBadge severity={incident.severity} dot />
-                  <StatusBadge status={incident.status} />
-                  <Badge variant="default" className="text-[10px]">
-                    {incident.event_count} events
-                  </Badge>
-                  {incident.mitre_techniques.slice(0, 2).map(t => (
-                    <Badge key={t.technique_id} variant="primary" className="text-[10px]">
-                      {t.technique_id}
-                    </Badge>
-                  ))}
-                  <span className="text-[11px] text-[#3d566e] ml-auto font-mono">
-                    {formatRelativeTime(incident.created_at)}
-                  </span>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[9px] font-mono px-2 py-0.5 rounded border uppercase font-bold"
+                          style={{ color: severityColor(incident.severity), borderColor: severityColor(incident.severity) + '40', background: severityColor(incident.severity) + '10' }}>
+                          {incident.severity}
+                        </span>
+                        <span className="text-[9px] font-mono px-2 py-0.5 rounded border uppercase"
+                          style={{ color: statusColor(incident.status), borderColor: BORDER }}>
+                          {incident.status}
+                        </span>
+                        <span className="text-[9px] font-mono" style={{ color: DIM }}>
+                          {incident.mitre_techniques?.[0]?.technique_id}
+                        </span>
+                      </div>
+                      <h3 className="text-[13px] font-bold font-mono" style={{ color: BRIGHT }}>{incident.title}</h3>
+                      <p className="text-[11px] mt-1 line-clamp-1" style={{ color: MUTED }}>{incident.description}</p>
+                    </div>
+                    <ArrowRight style={{ width: 15, height: 15, color: DIM, marginTop: 2, flexShrink: 0 }}
+                      className="group-hover:translate-x-1 transition-transform" />
+                  </div>
+                  <div className="flex items-center gap-4 mt-2 text-[9px] font-mono" style={{ color: DIM }}>
+                    <span>ASSETS: <span style={{ color: MUTED }}>{incident.affected_assets?.slice(0,3).join(', ')}</span></span>
+                    <span>EVENTS: <span style={{ color: PRIMARY }}>{incident.event_count}</span></span>
+                    <span className="ml-auto">{new Date(incident.created_at).toLocaleTimeString('en-GB')}</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      </Link>
-    </motion.div>
+            </Link>
+          </motion.div>
+        ))}
+      </div>
+    </PageContainer>
   )
 }

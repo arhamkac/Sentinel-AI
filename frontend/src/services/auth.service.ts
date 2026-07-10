@@ -29,7 +29,7 @@ export const authService = {
   },
 
   async logout(): Promise<void> {
-    try { await api.post('/auth/logout') } catch {}
+    try { await api.post('/auth/logout') } catch (e) { console.warn("Logout request failed:", e); }
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
   },

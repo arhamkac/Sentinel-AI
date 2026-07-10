@@ -1,249 +1,187 @@
 import { NavLink, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  LayoutDashboard, AlertTriangle, GitBranch, Brain, Shield,
-  Zap, FileText, Activity, Settings, ChevronLeft, ChevronRight,
-  Radio, Cpu, Lock,
+  LayoutDashboard, Network, ShieldCheck, ClipboardList, Settings,
+  ChevronLeft, ChevronRight, Hexagon, Shield,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useUIStore } from '@/stores/ui.store'
 import { Tooltip } from '@/components/ui'
 
-const NAV_SECTIONS = [
-  {
-    label: 'MONITORING',
-    items: [
-      { to: '/dashboard',    icon: LayoutDashboard, label: 'Dashboard',        badge: null },
-      { to: '/incidents',    icon: AlertTriangle,   label: 'Incidents',        badge: '7' },
-      { to: '/attack-graph', icon: GitBranch,       label: 'Attack Graph',     badge: null },
-    ],
-  },
-  {
-    label: 'ANALYSIS',
-    items: [
-      { to: '/ai-investigation', icon: Brain,  label: 'AI Investigation', badge: null },
-      { to: '/mitre',            icon: Shield, label: 'MITRE ATT&CK',    badge: null },
-      { to: '/threat-intel',     icon: Zap,    label: 'Threat Intel',     badge: null },
-    ],
-  },
-  {
-    label: 'TOOLS',
-    items: [
-      { to: '/reports',    icon: FileText,  label: 'Reports',   badge: null },
-      { to: '/simulator',  icon: Activity,  label: 'Simulator', badge: null },
-    ],
-  },
-]
-
-const BOTTOM_ITEMS = [
-  { to: '/settings', icon: Settings, label: 'Settings' },
+const NAV = [
+  { to: '/dashboard',        icon: LayoutDashboard, label: 'Command Center' },
+  { to: '/incidents',        icon: Network,         label: 'Incidents'      },
+  { to: '/attack-graph',     icon: ShieldCheck,     label: 'Attack Graph'   },
+  { to: '/ai-investigation', icon: ClipboardList,   label: 'Investigation'  },
+  { to: '/settings',         icon: Settings,        label: 'Settings'       },
 ]
 
 export function Sidebar() {
   const { sidebarCollapsed, toggleSidebar } = useUIStore()
-  const location = useLocation()
+  const { pathname } = useLocation()
+  const W = sidebarCollapsed ? 72 : 264
 
   return (
     <motion.aside
       initial={false}
-      animate={{ width: sidebarCollapsed ? 64 : 230 }}
-      transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-      className="relative flex flex-col h-screen bg-[#040d1a] border-r border-[#162030] shrink-0 z-30 overflow-hidden"
+      animate={{ width: W }}
+      transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
+      className="relative flex flex-col h-screen shrink-0 z-30 overflow-visible"
+      style={{ background: 'var(--bg-chrome)', borderRight: '1px solid var(--bd-default)', boxShadow: 'inset -1px 0 0 rgba(255,255,255,0.02)' }}
     >
-      {/* Top accent line */}
-      <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#00E5FF]/60 to-transparent" />
-
-      {/* Subtle background glow */}
-      <div className="absolute top-0 left-0 right-0 h-48 bg-gradient-to-b from-[#00E5FF]/[0.03] to-transparent pointer-events-none" />
-
-      {/* Logo */}
-      <div className="flex items-center h-16 px-3.5 border-b border-[#162030] overflow-hidden shrink-0">
-        <div className="flex items-center gap-3 shrink-0">
-          {/* Animated logo icon */}
-          <div className="relative w-9 h-9 shrink-0">
-            {/* Outer pulse ring */}
-            <div className="absolute inset-0 rounded-xl bg-[#00E5FF]/10 blur-md animate-[pulse_3s_ease-in-out_infinite]" />
-            {/* Icon container */}
-            <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-[#0c1828] to-[#071022] border border-[#00E5FF]/30 flex items-center justify-center shadow-[0_0_20px_rgba(0,229,255,0.15)]">
-              <Radio className="w-4.5 h-4.5 text-[#00E5FF]" style={{ width: 18, height: 18 }} />
-            </div>
-          </div>
-          <AnimatePresence>
-            {!sidebarCollapsed && (
-              <motion.div
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                transition={{ duration: 0.15 }}
-              >
-                <div className="flex items-center gap-1.5">
-                  <span className="text-sm font-bold text-[#E2E8F0] whitespace-nowrap tracking-wide">Sentinel</span>
-                  <span className="text-sm font-bold whitespace-nowrap" style={{ background: 'linear-gradient(135deg,#00E5FF,#7C3AED)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>AI</span>
-                </div>
-                <p className="text-[10px] text-[#3d566e] whitespace-nowrap font-mono tracking-widest uppercase">Cyber Intelligence</p>
-              </motion.div>
-            )}
-          </AnimatePresence>
+      {/* ── Logo ────────────────────────────────────────────── */}
+      <div
+        className="flex items-center gap-3 px-4 shrink-0"
+        style={{ height: 72, borderBottom: '1px solid var(--bd-hairline)' }}
+      >
+        {/* icon */}
+        <div
+          className="flex items-center justify-center rounded-xl shrink-0"
+          style={{
+            width     : 36, height: 36,
+            background: 'var(--accent-bg)',
+            border    : '1px solid var(--accent-ring)',
+          }}
+        >
+          <Hexagon style={{ width: 17, height: 17, color: 'var(--accent)' }} strokeWidth={1.5} />
         </div>
-      </div>
 
-      {/* Nav sections */}
-      <nav className="flex-1 py-3 px-2 overflow-y-auto overflow-x-hidden space-y-1">
-        {NAV_SECTIONS.map(({ label, items }) => (
-          <div key={label} className="mb-1">
-            <AnimatePresence>
-              {!sidebarCollapsed && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="px-2 pt-3 pb-1.5"
-                >
-                  <span className="text-[9px] font-semibold tracking-[0.15em] text-[#3d566e] uppercase font-mono">
-                    {label}
-                  </span>
-                </motion.div>
-              )}
-            </AnimatePresence>
-            {sidebarCollapsed && <div className="my-2 mx-auto w-5 h-[1px] bg-[#162030]" />}
-            <div className="space-y-0.5">
-              {items.map(({ to, icon: Icon, label: itemLabel, badge }) => {
-                const isActive = location.pathname === to || location.pathname.startsWith(to + '/')
-                const item = (
-                  <NavLink
-                    key={to}
-                    to={to}
-                    className={cn(
-                      'relative flex items-center gap-2.5 h-9 px-2.5 rounded-lg text-sm transition-all duration-150 group overflow-hidden',
-                      isActive
-                        ? 'bg-[#00E5FF]/[0.08] text-[#00E5FF] border border-[#00E5FF]/20'
-                        : 'text-[#8FA3BF] hover:bg-[#0c1828] hover:text-[#E2E8F0] border border-transparent'
-                    )}
-                  >
-                    {/* Active left accent bar */}
-                    {isActive && (
-                      <motion.div
-                        layoutId="sidebar-active"
-                        className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-primary shadow-[0_0_8px_var(--color-primary)]"
-                        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                      />
-                    )}
-                    <Icon
-                      style={{ width: 15, height: 15 }}
-                      className={cn(
-                        'shrink-0 transition-colors',
-                        isActive ? 'text-primary' : 'text-[#3d566e] group-hover:text-[#8FA3BF]'
-                      )}
-                    />
-                    <AnimatePresence>
-                      {!sidebarCollapsed && (
-                        <motion.span
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          transition={{ duration: 0.1 }}
-                          className="whitespace-nowrap font-medium text-[13px] flex-1"
-                        >
-                          {itemLabel}
-                        </motion.span>
-                      )}
-                    </AnimatePresence>
-                    {/* Badge */}
-                    {badge && !sidebarCollapsed && (
-                      <motion.span
-                        initial={{ opacity: 0, scale: 0.6 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-danger/15 text-danger border border-danger/20 min-w-[18px] text-center"
-                      >
-                        {badge}
-                      </motion.span>
-                    )}
-                  </NavLink>
-                )
-                return sidebarCollapsed ? (
-                  <Tooltip key={to} content={itemLabel} side="right">{item}</Tooltip>
-                ) : item
-              })}
-            </div>
-          </div>
-        ))}
-      </nav>
-
-      {/* Bottom section */}
-      <div className="shrink-0 border-t border-border">
-        {/* System integrity */}
         <AnimatePresence>
           {!sidebarCollapsed && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="px-3 py-2.5"
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1,  x:  0 }}
+              exit  ={{ opacity: 0,  x: -8 }}
+              transition={{ duration: 0.15 }}
+              className="overflow-hidden"
             >
-              <div className="rounded-lg bg-surface border border-border p-2.5">
-                <div className="flex items-center justify-between mb-1.5">
-                  <div className="flex items-center gap-1.5">
-                    <Cpu style={{ width: 11, height: 11 }} className="text-primary" />
-                    <span className="text-[9px] font-mono text-[#3d566e] uppercase tracking-widest">System Integrity</span>
-                  </div>
-                  <span className="text-[9px] font-bold text-success font-mono">99.7%</span>
-                </div>
-                <div className="h-1 rounded-full bg-border overflow-hidden">
-                  <div className="h-full rounded-full bg-gradient-to-r from-primary to-success" style={{ width: '99.7%' }} />
-                </div>
-                <div className="flex items-center gap-1 mt-1.5">
-                  <Lock style={{ width: 9, height: 9 }} className="text-[#3d566e]" />
-                  <span className="text-[9px] font-mono text-[#3d566e]">AES-256 · STABLE</span>
-                </div>
+              <p style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700, color: 'var(--tx-high)', letterSpacing: '0.06em', lineHeight: 1.2 }}>
+                SENTINEL AI
+              </p>
+              <p style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--accent)', letterSpacing: '0.20em', textTransform: 'uppercase', marginTop: 3 }}>
+                OPERATIONAL
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* ── Nav ─────────────────────────────────────────────── */}
+      <nav className="flex-1 overflow-y-auto overflow-x-hidden" style={{ padding: '12px 8px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {NAV.map(({ to, icon: Icon, label }) => {
+          const active = pathname === to || (to !== '/dashboard' && pathname.startsWith(to + '/'))
+
+          const item = (
+            <NavLink
+              key={to}
+              to={to}
+              className={cn(
+                'group relative flex items-center transition-all duration-150',
+                sidebarCollapsed ? 'justify-center rounded-xl' : 'rounded-xl px-3 gap-3',
+              )}
+              style={{
+                height     : 42,
+                background : active ? 'var(--accent-bg)' : 'transparent',
+                border     : `1px solid ${active ? 'var(--accent-ring)' : 'transparent'}`,
+                padding    : sidebarCollapsed ? '0' : '0 12px',
+              }}
+            >
+              {/* active pill */}
+              {active && !sidebarCollapsed && (
+                <span
+                  className="absolute left-0 rounded-r-full"
+                  style={{ top: 8, bottom: 8, width: 3, background: 'var(--accent)' }}
+                />
+              )}
+
+              <Icon style={{
+                width: 16, height: 16, flexShrink: 0,
+                color: active ? 'var(--accent)' : 'var(--tx-low)',
+                transition: 'color 0.15s',
+              }} />
+
+              <AnimatePresence>
+                {!sidebarCollapsed && (
+                  <motion.span
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    transition={{ duration: 0.1 }}
+                    style={{
+                      fontSize  : 13,
+                      fontWeight: active ? 500 : 400,
+                      color     : active ? 'var(--accent)' : 'var(--tx-mid)',
+                      whiteSpace: 'nowrap',
+                      transition: 'color 0.15s',
+                    }}
+                  >
+                    {label}
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </NavLink>
+          )
+
+          return sidebarCollapsed
+            ? <Tooltip key={to} content={label} side="right">{item}</Tooltip>
+            : item
+        })}
+      </nav>
+
+      {/* ── User block ──────────────────────────────────────── */}
+      <div style={{ padding: '10px 8px', borderTop: '1px solid var(--bd-hairline)' }}>
+        <AnimatePresence mode="wait">
+          {!sidebarCollapsed ? (
+            <motion.div
+              key="exp"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="flex items-center gap-3 rounded-xl px-3"
+              style={{
+                height    : 48,
+                background: 'var(--bg-card)',
+                border    : '1px solid var(--bd-hairline)',
+              }}
+            >
+              <div className="flex items-center justify-center rounded-lg shrink-0"
+                style={{ width: 34, height: 34, background: 'var(--accent-bg)', border: '1px solid var(--accent-ring)' }}>
+                <Shield style={{ width: 13, height: 13, color: 'var(--accent)' }} />
+              </div>
+              <div>
+                <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--tx-high)', lineHeight: 1.3 }}>Operator 09</p>
+                <p style={{ fontSize: 10, color: 'var(--tx-low)', fontFamily: 'var(--font-mono)', letterSpacing: '0.08em', textTransform: 'uppercase', lineHeight: 1.3 }}>Level 4 Access</p>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="col"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="flex justify-center"
+            >
+              <div className="flex items-center justify-center rounded-xl"
+                style={{ width: 44, height: 44, background: 'var(--bg-card)', border: '1px solid var(--bd-hairline)' }}>
+                <Shield style={{ width: 15, height: 15, color: 'var(--accent)' }} />
               </div>
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* Settings + bottom items */}
-        <div className="py-2 px-2 space-y-0.5">
-          {BOTTOM_ITEMS.map(({ to, icon: Icon, label }) => {
-            const isActive = location.pathname.startsWith(to)
-            const item = (
-              <NavLink
-                key={to}
-                to={to}
-                className={cn(
-                  'flex items-center gap-2.5 h-9 px-2.5 rounded-lg text-sm transition-all duration-150 group border',
-                  isActive
-                    ? 'bg-primary/[0.08] text-primary border-primary/20'
-                    : 'text-[#8FA3BF] hover:bg-surface-2 hover:text-[#E2E8F0] border-transparent'
-                )}
-              >
-                <Icon style={{ width: 15, height: 15 }} className={cn('shrink-0', isActive ? 'text-primary' : 'text-[#3d566e] group-hover:text-[#8FA3BF]')} />
-                <AnimatePresence>
-                  {!sidebarCollapsed && (
-                    <motion.span
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      className="whitespace-nowrap font-medium text-[13px]"
-                    >
-                      {label}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </NavLink>
-            )
-            return sidebarCollapsed ? (
-              <Tooltip key={to} content={label} side="right">{item}</Tooltip>
-            ) : item
-          })}
-        </div>
       </div>
 
-      {/* Collapse toggle */}
+      {/* ── Collapse toggle ─────────────────────────────────── */}
       <button
         onClick={toggleSidebar}
         aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        className="absolute -right-3 top-[72px] w-6 h-6 rounded-full bg-surface border border-border-3 flex items-center justify-center text-[#3d566e] hover:text-primary hover:border-primary/40 hover:shadow-[0_0_12px_var(--color-primary)] transition-all z-40 cursor-pointer"
+        className="absolute z-50 flex items-center justify-center rounded-full cursor-pointer transition-all duration-150"
+        style={{
+          top      : 76,
+          right    : -12,
+          width    : 24, height: 24,
+          background: 'var(--bg-card)',
+          border   : '1px solid var(--bd-default)',
+          color    : 'var(--tx-low)',
+          boxShadow: 'var(--sh-sm)',
+        }}
+        onMouseEnter={e => { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor = 'var(--accent-ring)'; b.style.color = 'var(--accent)' }}
+        onMouseLeave={e => { const b = e.currentTarget as HTMLButtonElement; b.style.borderColor = 'var(--bd-default)'; b.style.color = 'var(--tx-low)' }}
       >
-        {sidebarCollapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
+        {sidebarCollapsed ? <ChevronRight style={{ width: 12, height: 12 }} /> : <ChevronLeft style={{ width: 12, height: 12 }} />}
       </button>
     </motion.aside>
   )

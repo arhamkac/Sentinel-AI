@@ -1,203 +1,134 @@
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useEffect, useMemo, useRef } from 'react'
+import { motion } from 'framer-motion'
 import {
-  Activity, AlertTriangle, Shield, CheckCircle2,
-  RefreshCw, Terminal, Eye, Sliders, Zap
+  Terminal, Globe, Activity, Zap,
+  TrendingUp, TrendingDown, Minus,
+  Cpu, ShieldOff, Eye,
 } from 'lucide-react'
 import { PageContainer } from '@/components/layout'
-import { Card, CardContent } from '@/components/ui'
 import { useEventsStore } from '@/stores/events.store'
-import { formatRelativeTime } from '@/lib/utils'
 
-// ─── Phase Deviation Waveform Signature Component ───────────────────────────
-function PhaseWaveform({ deviation }: { deviation: number }) {
-  const [phase, setPhase] = useState(0)
-
-  useEffect(() => {
-    let animId: number
-    const tick = () => {
-      setPhase(p => (p + 0.08) % (Math.PI * 2))
-      animId = requestAnimationFrame(tick)
-    }
-    animId = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(animId)
-  }, [])
-
-  // Draw nominal and anomalous sine paths
-  const getSinePath = (amplitude: number, shift: number) => {
-    let path = `M 0 50`
-    for (let x = 0; x <= 300; x += 5) {
-      const y = 50 + Math.sin((x / 20) + phase + shift) * amplitude
-      path += ` L ${x} ${y}`
-    }
-    return path
-  }
-
-  const nominalPath = getSinePath(20, 0)
-  const anomalousPath = getSinePath(22, deviation * 0.4)
-
-  return (
-    <div className="rounded-xl border border-[#162030] bg-[#071022] p-4 flex flex-col justify-between h-48 relative overflow-hidden">
-      {/* Background Grid Lines */}
-      <div className="absolute inset-0 opacity-[0.02] pointer-events-none">
-        <svg className="w-full h-full" viewBox="0 0 100 100">
-          <line x1="0" y1="25" x2="100" y2="25" stroke="#00E5FF" strokeWidth="0.5" />
-          <line x1="0" y1="50" x2="100" y2="50" stroke="#00E5FF" strokeWidth="0.5" />
-          <line x1="0" y1="75" x2="100" y2="75" stroke="#00E5FF" strokeWidth="0.5" />
-        </svg>
-      </div>
-
-      <div className="flex items-center justify-between z-10">
-        <div>
-          <span className="text-[10px] font-mono text-[#3d566e] tracking-widest uppercase">Grid Phasing Telemetry</span>
-          <h4 className="text-sm font-bold font-mono text-[#E2E8F0] mt-0.5">Sub-02 Phase Angle Shift</h4>
-        </div>
-        <div className="flex items-center gap-3 font-mono text-[10px]">
-          <span className="flex items-center gap-1 text-[#8EDDBE]">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#8EDDBE] animate-pulse" />
-            NOMINAL
-          </span>
-          <span className="flex items-center gap-1 text-[#E75A43]">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#E75A43] animate-pulse" />
-            OBSERVED
-          </span>
-        </div>
-      </div>
-
-      {/* Interactive SVG wave canvas */}
-      <div className="relative flex items-center justify-center h-24 my-1">
-        <svg className="w-full h-full overflow-visible" viewBox="0 0 300 100" preserveAspectRatio="none">
-          {/* Nominal Reference Line */}
-          <path d={nominalPath} fill="none" stroke="#8EDDBE" strokeWidth="1.5" strokeOpacity="0.4" />
-          
-          {/* Observed/Anomalous Line */}
-          <path
-            d={anomalousPath}
-            fill="none"
-            stroke={deviation > 0.3 ? '#E75A43' : '#FFB040'}
-            strokeWidth="2"
-            style={{
-              filter: `drop-shadow(0 0 4px ${deviation > 0.3 ? 'rgba(231,90,67,0.5)' : 'rgba(255,176,64,0.3)'})`
-            }}
-          />
-        </svg>
-      </div>
-
-      <div className="flex justify-between items-center z-10 border-t border-[#162030]/50 pt-2 text-[10px] font-mono text-[#3d566e]">
-        <span>Observed Drift: <strong className="text-[#E2E8F0]">{(deviation * 15).toFixed(2)}°</strong></span>
-        <span>Line Freq: <strong className="text-[#8EDDBE]">50.02 Hz</strong></span>
-      </div>
-    </div>
-  )
+/* ─── shared token shorthands ─────────────────────────────────── */
+const T = {
+  accent  : 'var(--accent)',
+  danger  : 'var(--danger)',
+  warn    : 'var(--warn)',
+  success : 'var(--success)',
+  info    : 'var(--info)',
+  txHigh  : 'var(--tx-high)',
+  txMid   : 'var(--tx-mid)',
+  txLow   : 'var(--tx-low)',
+  card    : 'var(--bg-card)',
+  inset   : 'var(--bg-inset)',
+  bdDef   : 'var(--bd-default)',
+  bdHair  : 'var(--bd-hairline)',
+  mono    : 'var(--font-mono)',
 }
 
-// ─── Substation Grid Topology Component ─────────────────────────────────────
-interface SubstationNode {
-  id: string
-  label: string
-  status: 'nominal' | 'warning' | 'trip'
-  x: string
-  y: string
-}
+/* ─── types ───────────────────────────────────────────────────── */
+interface SubNode { id: string; label: string; status: 'ok'|'warn'|'err'; cx: number; cy: number }
+interface LogLine  { text: string; color: string }
 
-function SubstationTopology({ nodes, activeNodeId, onSelectNode }: {
-  nodes: SubstationNode[]
-  activeNodeId: string
-  onSelectNode: (node: SubstationNode) => void
+const nodeCol = (s: SubNode['status']) =>
+  s === 'err' ? T.danger : s === 'warn' ? T.warn : T.accent
+
+const DEFAULT_LOGS: LogLine[] = [
+  { text: '[14:02:31.442] OUTSTATION_04 → MASTER :: RESP_DIRECT_OPERATE (Obj 12, Var 1, Index 4)', color: T.accent },
+  { text: '[14:02:31.458] Frame Validation: CRC OK // Seq: 14 // Length: 28 bytes',                  color: T.txLow  },
+  { text: '[14:02:32.001] AI_AGENT :: Analyzing Sub-02 Phase Angle Shift (+0.04 deg)',               color: T.warn   },
+  { text: '[14:02:33.211] MASTER → ALL_NODES :: CLASS_POLL_0_1_2_3',                                 color: T.txLow  },
+  { text: '[14:02:33.225] NODE_01 :: ACK :: Data received successfully',                             color: T.txLow  },
+  { text: '[14:02:33.231] NODE_02 :: ACK :: Data received successfully',                             color: T.txLow  },
+  { text: '[14:02:33.245] NODE_04 :: ALERT :: Breaker trip detected in Sub-02-B4',                  color: T.danger },
+  { text: '[14:02:33.400] AI_RESPONSE :: Automated protection routine triggered.',                   color: T.warn   },
+  { text: '[14:02:34.002] Logs rotation... syncing with central audit.',                             color: T.txLow  },
+]
+
+/* ─── TopologyMap ─────────────────────────────────────────────── */
+function TopologyMap({ nodes, selected, onSelect }: {
+  nodes: SubNode[]; selected: string; onSelect: (id: string) => void
 }) {
-  const getStatusColor = (status: SubstationNode['status']) => {
-    if (status === 'trip') return '#E75A43'
-    if (status === 'warning') return '#FFB040'
-    return '#8EDDBE'
-  }
-
-  const getStatusGlow = (status: SubstationNode['status']) => {
-    if (status === 'trip') return 'rgba(231, 90, 67, 0.4)'
-    if (status === 'warning') return 'rgba(255, 176, 64, 0.4)'
-    return 'rgba(142, 221, 190, 0.2)'
-  }
+  /* SVG coordinate space: 520 × 240 */
+  const busY1 = 70, busY2 = 170
+  const cols  = [86, 260, 434]
 
   return (
-    <div className="rounded-xl border border-[#162030] bg-[#071022] p-5 flex flex-col h-[340px] relative overflow-hidden">
-      <div className="flex items-center justify-between mb-4 border-b border-[#162030]/60 pb-3 z-10">
-        <div>
-          <span className="text-[10px] font-mono text-[#3d566e] tracking-widest uppercase">Substation Topology Mesh</span>
-          <h3 className="text-sm font-bold font-mono text-[#E2E8F0] mt-0.5">High-Voltage Bus Interface</h3>
-        </div>
-        <div className="text-[10px] font-mono text-[#3d566e]">
-          ACTIVE NODES: <strong className="text-[#8EDDBE]">4 / 4</strong>
-        </div>
-      </div>
+    <div className="relative w-full" style={{ height: 270 }}>
+      {/* dot-grid bg */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          borderRadius   : 10,
+          backgroundImage: 'radial-gradient(rgba(0,217,180,0.09) 1px, transparent 1px)',
+          backgroundSize : '24px 24px',
+        }}
+      />
 
-      {/* Grid Canvas Diagram */}
-      <div className="flex-1 relative border border-[#162030]/30 rounded-lg bg-[#040d1a]/50 flex items-center justify-center p-4">
-        {/* Grid lines background */}
-        <div className="absolute inset-0 bg-[radial-gradient(#162030_1px,transparent_1px)] [background-size:16px_16px] opacity-40" />
+      <svg
+        width="100%" height="100%"
+        viewBox="0 0 520 240"
+        className="absolute inset-0"
+        style={{ overflow: 'visible' }}
+      >
+        {/* bus A – solid */}
+        <line x1={cols[0]} y1={busY1} x2={cols[2]} y2={busY1}
+          stroke="rgba(0,217,180,0.22)" strokeWidth={1.5} />
+        {/* bus B – dashed */}
+        <line x1={cols[0]} y1={busY2} x2={cols[2]} y2={busY2}
+          stroke="rgba(0,217,180,0.13)" strokeWidth={1.5} strokeDasharray="8 6" />
+        {/* column verticals */}
+        {cols.map(x => (
+          <line key={x} x1={x} y1={busY1} x2={x} y2={busY2}
+            stroke="rgba(0,217,180,0.11)" strokeWidth={1} />
+        ))}
+        {/* mid horizontal */}
+        <line x1={cols[0]} y1={120} x2={cols[2]} y2={120}
+          stroke="rgba(0,217,180,0.07)" strokeWidth={1} strokeDasharray="4 8" />
 
-        {/* Electrical Busbar lines */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none">
-          {/* Main Bus A link */}
-          <line x1="25%" y1="35%" x2="75%" y2="35%" stroke="#243C5A" strokeWidth="2" />
-          {/* Main Bus B link */}
-          <line x1="25%" y1="65%" x2="75%" y2="65%" stroke="#243C5A" strokeWidth="2" strokeDasharray="4 4" />
-          
-          {/* Node linking paths */}
-          <line x1="25%" y1="35%" x2="25%" y2="65%" stroke="#243C5A" strokeWidth="1.5" />
-          <line x1="75%" y1="35%" x2="75%" y2="65%" stroke="#243C5A" strokeWidth="1.5" />
-        </svg>
-
-        {nodes.map(node => {
-          const color = getStatusColor(node.status)
-          const glow = getStatusGlow(node.status)
-          const isSelected = activeNodeId === node.id
-
+        {nodes.map(n => {
+          const c = nodeCol(n.status)
+          const a = n.id === selected
           return (
-            <button
-              key={node.id}
-              onClick={() => onSelectNode(node)}
-              className="absolute p-1 rounded-xl flex flex-col items-center gap-1.5 transition-all duration-300 focus:outline-none cursor-pointer group"
-              style={{ left: node.x, top: node.y }}
-            >
-              {/* Outer Pulsing Ring */}
-              <div className="relative flex items-center justify-center w-10 h-10">
-                <div
-                  className="absolute inset-0 rounded-full transition-transform duration-500 scale-95 group-hover:scale-110"
-                  style={{
-                    border: `1px solid ${color}40`,
-                    boxShadow: `0 0 12px ${glow}`,
-                    background: isSelected ? `${color}15` : 'transparent'
-                  }}
-                />
-                
-                {/* Core substation terminal contact node */}
-                <div
-                  className="w-4 h-4 rounded-full border transition-all"
-                  style={{
-                    backgroundColor: node.status === 'nominal' ? '#071022' : color,
-                    borderColor: color,
-                    boxShadow: node.status !== 'nominal' ? `0 0 8px ${color}` : undefined
-                  }}
-                />
-              </div>
-
-              {/* Node label */}
-              <span
-                className="text-[10px] font-mono font-bold tracking-wider px-2 py-0.5 rounded border transition-colors"
-                style={{
-                  color: isSelected ? '#020814' : '#8FA3BF',
-                  backgroundColor: isSelected ? color : 'transparent',
-                  borderColor: isSelected ? color : '#162030'
-                }}
-              >
-                {node.label}
-              </span>
-            </button>
+            <g key={n.id} style={{ cursor: 'pointer' }} onClick={() => onSelect(n.id)}>
+              {/* outermost halo (active only) */}
+              {a && <circle cx={n.cx} cy={n.cy} r={24} fill="none" stroke={c} strokeWidth={1} opacity={0.12} />}
+              {/* selection ring */}
+              <circle cx={n.cx} cy={n.cy} r={a ? 14 : 9}
+                fill="none" stroke={c} strokeWidth={a ? 1.5 : 1} opacity={a ? 0.65 : 0.38} />
+              {/* soft glow blob for non-ok */}
+              {n.status !== 'ok' && <circle cx={n.cx} cy={n.cy} r={8} fill={c} opacity={0.10} />}
+              {/* core */}
+              <circle cx={n.cx} cy={n.cy} r={n.status === 'err' ? 5.5 : 4}
+                fill={n.status === 'ok' ? T.inset : c} stroke={c} strokeWidth={1.5} />
+              {/* label pill */}
+              <rect x={n.cx - 52} y={n.cy + 18} width={104} height={17} rx={3}
+                fill={a ? `${c}16` : 'rgba(9,18,32,0.80)'}
+                stroke={a ? `${c}40` : 'rgba(30,53,80,0.70)'}
+                strokeWidth={0.8} />
+              <text x={n.cx} y={n.cy + 30}
+                textAnchor="middle"
+                fontSize={7.5} fontFamily="JetBrains Mono, monospace"
+                fontWeight="600" letterSpacing="0.07em"
+                fill={a ? c : T.txLow}>
+                {n.label}
+              </text>
+            </g>
           )
         })}
-      </div>
+      </svg>
 
-      {/* Diagram schematic footer */}
-      <div className="flex justify-between items-center mt-3 text-[9px] font-mono text-[#3d566e]">
+      {/* footer strip */}
+      <div
+        className="absolute bottom-0 left-0 right-0 flex justify-between items-center"
+        style={{
+          padding    : '6px 16px',
+          borderTop  : `1px solid ${T.bdHair}`,
+          fontFamily : T.mono,
+          fontSize   : 9,
+          color      : T.txLow,
+        }}
+      >
         <span>MAIN BUSBARS: BUS-A (500KV) // BUS-B (STANDBY)</span>
         <span>SCADA PROTOCOL: DNP3 / IEC-61850</span>
       </div>
@@ -205,187 +136,390 @@ function SubstationTopology({ nodes, activeNodeId, onSelectNode }: {
   )
 }
 
-// ─── Dashboard Main Controller ──────────────────────────────────────────────
+/* ─── ScadaLogs ───────────────────────────────────────────────── */
+function ScadaLogs({ lines }: { lines: LogLine[] }) {
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => { if (ref.current) ref.current.scrollTop = ref.current.scrollHeight }, [lines])
+  return (
+    <div ref={ref} className="overflow-y-auto h-full" style={{ fontFamily: T.mono, fontSize: 11, lineHeight: 1.75 }}>
+      {lines.map((l, i) => (
+        <div key={i} style={{ color: l.color, padding: '0 4px', borderRadius: 3 }}
+          className="transition-colors hover:bg-white/[0.02]">{l.text}</div>
+      ))}
+    </div>
+  )
+}
+
+/* ─── ThreatMap ───────────────────────────────────────────────── */
+function ThreatMap() {
+  const pts = [
+    { x: '13%', y: '33%', c: T.danger }, { x: '83%', y: '26%', c: T.accent },
+    { x: '55%', y: '43%', c: T.accent }, { x: '68%', y: '28%', c: T.warn   },
+    { x: '30%', y: '51%', c: T.accent }, { x: '91%', y: '57%', c: T.accent },
+    { x: '44%', y: '22%', c: T.accent }, { x: '72%', y: '62%', c: T.accent },
+    { x: '20%', y: '64%', c: T.accent },
+  ]
+  return (
+    <div className="relative w-full h-full rounded-xl overflow-hidden" style={{ background: 'var(--bg-app)' }}>
+      <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice">
+        <path d="M55 38 Q78 18 122 28 Q142 42 132 78 Q112 98 82 88 Q48 78 55 38Z" fill="#0b1f35" />
+        <path d="M88 108 Q112 98 122 130 Q117 172 97 177 Q74 167 78 142 Q80 120 88 108Z" fill="#0b1f35" />
+        <path d="M174 28 Q200 18 215 40 Q221 62 200 70 Q183 65 174 50 Q168 40 174 28Z" fill="#0b1f35" />
+        <path d="M178 78 Q206 73 217 110 Q212 154 196 162 Q173 157 167 122 Q166 94 178 78Z" fill="#0b1f35" />
+        <path d="M220 22 Q282 13 342 33 Q372 50 362 82 Q332 102 280 90 Q238 75 223 54 Q213 38 220 22Z" fill="#0b1f35" />
+        <path d="M308 132 Q340 122 357 142 Q362 167 341 174 Q313 174 303 152 Q300 138 308 132Z" fill="#0b1f35" />
+      </svg>
+      <div aria-hidden className="absolute inset-0 pointer-events-none" style={{
+        backgroundImage: ['linear-gradient(rgba(0,217,180,0.055) 1px,transparent 1px)', 'linear-gradient(90deg,rgba(0,217,180,0.055) 1px,transparent 1px)'].join(','),
+        backgroundSize : '26px 26px',
+      }} />
+      {pts.map((d, i) => (
+        <div key={i} className="absolute" style={{ left: d.x, top: d.y, transform: 'translate(-50%,-50%)' }}>
+          <div className="relative flex items-center justify-center" style={{ width: 16, height: 16 }}>
+            <div className="absolute rounded-full animate-ping"
+              style={{ width: 14, height: 14, background: d.c, opacity: 0.22 }} />
+            <div className="relative rounded-full z-10"
+              style={{ width: 6, height: 6, background: d.c, boxShadow: `0 0 6px ${d.c}` }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/* ─── MetricCard ──────────────────────────────────────────────── */
+function SummaryCard({ title, value, detail, accent }: { title: string; value: string; detail: string; accent: string }) {
+  return (
+    <div style={{
+      background: T.card,
+      border: `1px solid ${T.bdDef}`,
+      borderRadius: 20,
+      padding: '24px',
+      boxShadow: 'var(--sh-md)',
+      minHeight: 120,
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 10,
+    }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+        <span style={{ fontSize: 11, fontWeight: 600, color: T.txLow, textTransform: 'uppercase', letterSpacing: '0.14em', fontFamily: T.mono }}>{title}</span>
+        <span style={{ width: 8, height: 8, borderRadius: '50%', background: accent, boxShadow: `0 0 8px ${accent}` }} />
+      </div>
+      <div style={{ fontSize: 24, fontWeight: 700, color: T.txHigh, fontFamily: T.mono, lineHeight: 1.1 }}>{value}</div>
+      <div style={{ fontSize: 12, color: T.txMid, lineHeight: 1.5 }}>{detail}</div>
+    </div>
+  )
+}
+
+function MetricCard({ label, value, unit, trend, trendLabel, icon, accent }: {
+  label: string; value: string; unit?: string
+  trend?: 'up'|'down'|'flat'; trendLabel?: string
+  icon: React.ReactNode; accent: string
+}) {
+  const TI = trend === 'up' ? TrendingUp : trend === 'down' ? TrendingDown : Minus
+  const tc = trend === 'up' ? T.danger : trend === 'down' ? T.success : T.txLow
+  return (
+    <div style={{
+      background  : T.card,
+      border      : `1px solid ${T.bdDef}`,
+      borderTop   : `2px solid ${accent}`,
+      borderRadius: 18,
+      padding     : 20,
+      display     : 'flex',
+      flexDirection:'column',
+      gap         : 12,
+      boxShadow   : 'var(--sh-md)',
+      height      : '100%',
+      minHeight   : 148,
+      justifyContent: 'flex-start',
+    }}>
+      {/* label row */}
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+        <span style={{ fontSize: 11, fontWeight: 500, color: T.txMid }}>{label}</span>
+        <div style={{
+          width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+          display:'flex', alignItems:'center', justifyContent:'center',
+          background: `${accent}12`, border: `1px solid ${accent}28`,
+        }}>
+          <span style={{ color: accent, display:'flex' }}>{icon}</span>
+        </div>
+      </div>
+      {/* value */}
+      <div style={{ display:'flex', alignItems:'baseline', gap: 6 }}>
+        <span style={{ fontSize: 30, fontWeight: 700, lineHeight: 1, color: T.txHigh, fontFamily: T.mono }}>{value}</span>
+        {unit && <span style={{ fontSize: 13, color: T.txLow, fontFamily: T.mono }}>{unit}</span>}
+      </div>
+      {/* trend */}
+      {trendLabel && (
+        <div style={{ display:'flex', alignItems:'center', gap: 5 }}>
+          <TI style={{ width: 12, height: 12, color: tc }} />
+          <span style={{ fontSize: 11, fontWeight: 500, color: tc }}>{trendLabel}</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ─── ProtectionRow ───────────────────────────────────────────── */
+function ProtectionRow({ label, active, accent }: { label:string; active:boolean; accent:string }) {
+  return (
+    <div style={{
+      display       : 'flex', alignItems: 'center', justifyContent: 'space-between',
+      gap           : 10,
+      padding       : '12px 14px',
+      borderRadius  : 12,
+      background    : T.inset,
+      border        : `1px solid ${active ? `${accent}30` : T.bdHair}`,
+    }}>
+      <span style={{ fontSize: 12, color: T.txMid }}>{label}</span>
+      <span style={{
+        fontSize    : 9, fontWeight: 700, letterSpacing: '0.08em',
+        padding     : '3px 8px', borderRadius: 5,
+        fontFamily  : T.mono,
+        color       : active ? accent : T.txLow,
+        background  : active ? `${accent}14` : 'transparent',
+        border      : `1px solid ${active ? `${accent}40` : T.bdHair}`,
+      }}>
+        {active ? 'ACTIVE' : 'READY'}
+      </span>
+    </div>
+  )
+}
+
+/* ─── Section card wrapper ────────────────────────────────────── */
+const cardStyle = {
+  background  : T.card,
+  border      : `1px solid ${T.bdDef}`,
+  borderRadius: 24,
+  boxShadow   : 'var(--sh-md)',
+  overflow    : 'hidden' as const,
+}
+const cardHeaderStyle = {
+  display      : 'flex', alignItems: 'center', justifyContent: 'space-between',
+  gap          : 12,
+  flexWrap     : 'wrap' as const,
+  padding      : '24px 24px',
+  borderBottom : `1px solid var(--bd-hairline)`,
+}
+
+/* ─── DashboardPage ───────────────────────────────────────────── */
 export function DashboardPage() {
   const { liveEvents } = useEventsStore()
-  const [selectedSubstation, setSelectedSubstation] = useState<SubstationNode>({
-    id: 'sub-02', label: 'SUBSTATION_02', status: 'warning', x: '68%', y: '22%'
-  })
+  const hasCritical = liveEvents.some(e => e.severity === 'critical')
+  const hasHigh     = liveEvents.some(e => e.severity === 'high')
+  const alert       = hasCritical ? 'trip' : hasHigh ? 'warn' : 'ok'
+  const sc          = alert === 'trip' ? T.danger : alert === 'warn' ? T.warn : T.accent
 
-  // Simulated node state representing SCADA systems
-  const [gridNodes, setGridNodes] = useState<SubstationNode[]>([
-    { id: 'sub-01', label: 'SUBSTATION_01', status: 'nominal', x: '18%', y: '22%' },
-    { id: 'sub-02', label: 'SUBSTATION_02', status: 'warning', x: '68%', y: '22%' },
-    { id: 'sub-03', label: 'SUBSTATION_03', status: 'nominal', x: '18%', y: '52%' },
-    { id: 'sub-04', label: 'SUBSTATION_04', status: 'nominal', x: '68%', y: '52%' },
-  ])
+  const [sel, setSel] = useState('sub-02')
 
-  // Real-time grid phase drift simulation based on logs
-  const [phasingDeviation, setPhasingDeviation] = useState(0.42)
+  const nodes: SubNode[] = useMemo(() => [
+    { id:'sub-01', label:'SUBSTATION_01',   status:'ok',   cx: 86, cy: 70  },
+    { id:'sub-02', label:'SUBSTATION_02',   status: alert==='trip'?'err': alert==='warn'?'warn':'ok', cx:260, cy:70  },
+    { id:'sub-03', label:'SUBSTATION_03',   status:'ok',   cx:434, cy: 70  },
+    { id:'sub-04', label:'SUBSTATION_04',   status:'ok',   cx: 86, cy:170  },
+    { id:'sub-05', label:'SUBSTATION_05',   status:'ok',   cx:260, cy:170  },
+    { id:'sub-06', label:'SUBSTATION_06',   status:'ok',   cx:434, cy:170  },
+    { id:'brk',    label:'BREAKER_X_ERR',   status:'err',  cx:160, cy:120  },
+    { id:'trf',    label:'TRANSFORMER_SEC', status:'ok',   cx:358, cy:120  },
+  ] as SubNode[], [alert])
 
+  const okCount = nodes.filter(n => n.status === 'ok').length
+  const selNode = nodes.find(n => n.id === sel)
+
+  const [logLines, setLogLines] = useState<LogLine[]>(DEFAULT_LOGS)
+  const prevLen = useRef(0)
   useEffect(() => {
-    // If a critical event occurs in our log store, transition node to trip state
-    const hasCritical = liveEvents.some(e => e.severity === 'critical')
-    const hasHigh = liveEvents.some(e => e.severity === 'high')
+    if (!liveEvents.length || liveEvents.length === prevLen.current) return
+    prevLen.current = liveEvents.length
+    const ev = liveEvents[0]
+    const ts = new Date(ev.timestamp).toLocaleTimeString('en-GB', { hour12: false })
+    const col = ev.severity==='critical'?T.danger: ev.severity==='high'?T.warn: ev.severity==='medium'?T.accent: T.txLow
+    setLogLines(p => [...p, { text:`[${ts}.000] ${ev.hostname??'SYSTEM'} :: ${ev.description}`, color:col }].slice(-40))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveEvents.length])
 
-    setGridNodes(prev => prev.map(node => {
-      if (node.id === 'sub-02') {
-        return {
-          ...node,
-          status: hasCritical ? 'trip' : hasHigh ? 'warning' : 'nominal'
-        }
-      }
-      return node
-    }))
-
-    if (hasCritical) {
-      setPhasingDeviation(0.85)
-    } else if (hasHigh) {
-      setPhasingDeviation(0.48)
-    } else {
-      setPhasingDeviation(0.12)
-    }
-  }, [liveEvents])
-
-  const activeStatus = gridNodes.find(n => n.id === selectedSubstation.id)?.status ?? 'nominal'
+  const aiText = alert === 'trip'
+    ? 'Sub-02 phase angle shift matches MITRE T0813 (DNP3 Command Poisoning). Shadow copy deletion preceded grid frequency deviation. Breaker isolation triggered autonomously.'
+    : alert === 'warn'
+    ? 'Phase frequency deviation on Sub-02. Spear-phishing on WS-07 preceded remote SCADA access, causing transient DNP3 command validation warnings.'
+    : 'System frequency, impedance, and telemetry are nominal. Bus connection checks confirm optimal line load alignment. Minimal harmonic distortion in the DNP3 frame layer.'
 
   return (
     <PageContainer>
-      {/* CNI Status Header Banner */}
       <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl border bg-surface relative overflow-hidden"
+        initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25 }}
+        className="relative flex flex-wrap items-center justify-between gap-3 overflow-hidden rounded-2xl border px-4 py-3 sm:px-6 sm:py-4"
         style={{
-          borderColor: activeStatus === 'trip' ? '#E75A43' : activeStatus === 'warning' ? '#FFB040' : '#8EDDBE',
-          borderTopWidth: '2px'
+          background    : `${sc}0A`,
+          border        : `1px solid ${sc}30`,
+          borderLeft    : `3px solid ${sc}`,
+          boxShadow     : `0 0 28px ${sc}0E`,
         }}
       >
-        <div className="flex items-center gap-3">
-          {activeStatus === 'trip' ? (
-            <div className="p-2 rounded-lg bg-[#E75A43]/15 text-[#E75A43] animate-[danger-pulse_2s_ease-in-out_infinite]">
-              <AlertTriangle className="w-5 h-5" />
-            </div>
-          ) : activeStatus === 'warning' ? (
-            <div className="p-2 rounded-lg bg-[#FFB040]/15 text-[#FFB040]">
-              <AlertTriangle className="w-5 h-5" />
-            </div>
-          ) : (
-            <div className="p-2 rounded-lg bg-[#8EDDBE]/15 text-[#8EDDBE]">
-              <CheckCircle2 className="w-5 h-5" />
-            </div>
-          )}
+        <div aria-hidden style={{ position:'absolute', inset:0, pointerEvents:'none', background:`linear-gradient(90deg,${sc}07 0%,transparent 55%)` }} />
 
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-mono text-[#3d566e] tracking-widest uppercase">Grid Security Core</span>
-              <span className="text-[9px] font-mono text-[#8FA3BF] px-1.5 py-0.5 rounded border border-border">SECURE_MODE: ON</span>
-            </div>
-            <h2 className="text-sm font-bold font-mono text-[#E2E8F0] uppercase mt-1 tracking-wider">
-              {activeStatus === 'trip' ? '⚠ GRID OUTAGE HAZARD: SUB-02 TRIP BREAKER PREVENTED'
-                : activeStatus === 'warning' ? '⚡ TRANSIENT FREQUENCY DRIFT REPORTED ON SUB-02'
-                : '✓ ALL BUS TRANSMISSION NODES ONLINE AND ALIGNED'}
-            </h2>
-          </div>
+        <div className="relative flex min-w-0 flex-wrap items-center gap-3">
+          <span className="status-dot" style={{ background: sc, boxShadow:`0 0 8px ${sc}` }} />
+          <span className="max-w-[min(100%,42rem)] overflow-hidden text-ellipsis whitespace-nowrap" style={{ fontSize: 12, fontWeight: 600, color: sc, fontFamily: T.mono, textTransform:'uppercase', letterSpacing:'0.04em' }}>
+            {alert==='trip' ? 'GRID OUTAGE HAZARD — SUB-02 TRIP BREAKER PREVENTED'
+            : alert==='warn'? 'TRANSIENT FREQUENCY DRIFT DETECTED ON SUB-02'
+            : 'ALL BUS TRANSMISSION NODES ONLINE AND ALIGNED'}
+          </span>
+          <span style={{ flexShrink:0, fontSize:9, padding:'3px 8px', borderRadius:5, color:T.txLow, background:T.inset, border:`1px solid ${T.bdHair}`, fontFamily:T.mono, letterSpacing:'0.08em' }}>
+            SECURE_MODE: ON
+          </span>
         </div>
 
-        <div className="flex items-center gap-4 text-xs font-mono text-[#3d566e] ml-auto sm:ml-0">
-          <span>THREATS: <strong style={{ color: activeStatus === 'trip' ? '#E75A43' : activeStatus === 'warning' ? '#FFB040' : '#8EDDBE' }}>{activeStatus === 'trip' ? 'CRITICAL' : activeStatus === 'warning' ? 'WARNING' : 'ZERO'}</strong></span>
-          <span className="hidden md:inline">//</span>
-          <span className="hidden md:inline">SYSTEM INTEGRITY: <strong className="text-[#8EDDBE]">99.78%</strong></span>
+        <div className="relative hidden flex-wrap items-center gap-4 md:flex" style={{ fontFamily:T.mono, fontSize:11 }}>
+          <span style={{ color:T.txLow }}>THREATS: <strong style={{ color:sc }}>{alert==='trip'?'CRITICAL': alert==='warn'?'WARNING':'ZERO'}</strong></span>
+          <span style={{ color:T.bdDef }}>|</span>
+          <span style={{ color:T.txLow }}>INTEGRITY: <strong style={{ color:T.accent }}>99.78%</strong></span>
         </div>
       </motion.div>
 
-      {/* Main Grid Layout */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
-        {/* Left Column: Grid Substation Map Topology */}
-        <div className="xl:col-span-2 flex flex-col gap-5">
-          <SubstationTopology
-            nodes={gridNodes}
-            activeNodeId={selectedSubstation.id}
-            onSelectNode={setSelectedSubstation}
-          />
+      <div className="grid gap-5 md:grid-cols-3">
+        <SummaryCard title="Active Incidents" value="09" detail="3 require immediate analyst attention" accent={T.danger} />
+        <SummaryCard title="Analyst Confidence" value="97%" detail="Narrative confidence above baseline" accent={T.accent} />
+        <SummaryCard title="Threat Propagation" value="14" detail="Nodes linked to the current campaign" accent={T.warn} />
+      </div>
 
-          {/* Anomaly Phase Waveform signature */}
-          <PhaseWaveform deviation={phasingDeviation} />
-        </div>
-
-        {/* Right Column: AI Explainer & Recommended Mitigations */}
-        <div className="flex flex-col gap-5">
-          {/* Decision Trust explainer */}
-          <div className="rounded-xl border border-border bg-surface p-5 flex flex-col justify-between relative overflow-hidden" style={{ borderTop: `1px solid ${activeStatus === 'trip' ? '#E75A43' : activeStatus === 'warning' ? '#FFB040' : '#8EDDBE'}80` }}>
-            <div className="flex items-center gap-2 mb-4 border-b border-border/60 pb-3">
-              <Shield className="w-4 h-4 text-primary" />
-              <h3 className="text-sm font-bold font-mono text-[#E2E8F0] uppercase tracking-wider">Telemetry Assessment</h3>
-            </div>
-
-            <div className="space-y-4">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(320px,0.95fr)]">
+        <div className="flex flex-col gap-6">
+          <motion.div initial={{ opacity:0,y:12 }} animate={{ opacity:1,y:0 }} transition={{ duration:0.3,delay:0.06 }} style={cardStyle}>
+            <div style={cardHeaderStyle}>
               <div>
-                <span className="text-[9px] font-mono text-[#3d566e] uppercase tracking-wider block">Assessed Target</span>
-                <strong className="text-sm font-mono text-primary mt-0.5">{selectedSubstation.label}</strong>
+                <p style={{ fontSize:10, fontFamily:T.mono, textTransform:'uppercase', letterSpacing:'0.18em', color:T.txLow, marginBottom:4 }}>Investigation Context</p>
+                <h2 style={{ fontSize:18, fontWeight:600, color:T.txHigh, lineHeight:1.2 }}>Attack path traced across the substation mesh</h2>
               </div>
-
-              <div className="rounded-lg bg-bg-2/60 border border-border p-3 space-y-2">
-                <span className="text-[10px] font-mono text-[#3d566e] uppercase tracking-widest block">AI Explanation</span>
-                <p className="text-xs text-[#8FA3BF] leading-relaxed">
-                  {activeStatus === 'trip'
-                    ? 'Sub-02 Phase angle shift matches MITRE T0813 (DNP3 Command Poisoning). Attacker deletion of Shadow copies on domain systems preceded this grid frequency deviation, signaling a coordinated ransomware/utility sabotage attempt. Breaker isolation triggered autonomously.'
-                    : activeStatus === 'warning'
-                    ? 'Phase frequency deviation detected. Attacker initial access via spear-phishing on WS-07 was followed by remote service access to the SCADA system, causing transient command validation telemetry warnings.'
-                    : 'System frequency, impedance, and telemetry are nominal. Substation bus connection checks indicate optimal line load alignment across all high-voltage terminals.'}
+              <div style={{ textAlign:'right' }}>
+                <p style={{ fontSize:10, fontFamily:T.mono, textTransform:'uppercase', letterSpacing:'0.14em', color:T.txLow, marginBottom:4 }}>Aligned Nodes</p>
+                <p style={{ fontSize:15, fontWeight:700, fontFamily:T.mono, color:T.accent }}>
+                  {okCount} / {nodes.length}
                 </p>
               </div>
+            </div>
+            <div className="p-4 sm:p-5 lg:p-6">
+              <TopologyMap nodes={nodes} selected={sel} onSelect={setSel} />
+            </div>
+          </motion.div>
 
-              <div>
-                <span className="text-[10px] font-mono text-[#3d566e] uppercase tracking-widest block mb-2">Automated Protections</span>
-                <div className="space-y-2">
-                  {[
-                    { label: 'Isolate Breaker #4 (Sub-02)', active: activeStatus === 'trip', color: '#E75A43' },
-                    { label: 'Disable Compromised SCADA User', active: activeStatus === 'trip' || activeStatus === 'warning', color: '#FFB040' },
-                    { label: 'DNP3 Session Encryption Force', active: true, color: '#8EDDBE' },
-                  ].map((act, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-2 rounded bg-bg-2/30 border border-border text-xs">
-                      <span className="text-[#8FA3BF] font-mono text-[11px]">{act.label}</span>
-                      <span
-                        className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border"
-                        style={{
-                          color: act.active ? act.color : '#3d566e',
-                          borderColor: act.active ? act.color + '40' : '#1a2942',
-                          backgroundColor: act.active ? act.color + '0a' : 'transparent'
-                        }}
-                      >
-                        {act.active ? 'ACTIVE' : 'READY'}
-                      </span>
-                    </div>
-                  ))}
+          <motion.div initial={{ opacity:0,y:12 }} animate={{ opacity:1,y:0 }} transition={{ duration:0.3,delay:0.1 }}
+            className="terminal-overlay scan-line flex min-h-[280px] flex-col"
+            style={{ ...cardStyle, minHeight: 280 }}>
+            <div style={cardHeaderStyle}>
+              <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                <div style={{ width:32, height:32, borderRadius:8, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', background:'var(--warn-bg)', border:'1px solid var(--warn-ring)' }}>
+                  <Terminal style={{ width:15, height:15, color:T.warn }} />
+                </div>
+                <div>
+                  <p style={{ fontSize:13, fontWeight:600, color:T.txHigh, lineHeight:1.2 }}>AI Evidence Chain</p>
+                  <p style={{ fontSize:10, color:T.txLow, marginTop:2 }}>Machine-generated investigation narrative</p>
+                </div>
+              </div>
+              <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                <span style={{ width:7, height:7, borderRadius:'50%', background:T.accent, boxShadow:`0 0 5px ${T.accent}`, animation:'pulse-dot 2s ease-in-out infinite', display:'block' }} />
+                <span style={{ fontSize:10, fontFamily:T.mono, color:T.txLow }}>LIVE</span>
+              </div>
+            </div>
+            <div className="flex-1 min-h-0 px-5 py-4 sm:px-6 sm:py-5">
+              <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+                <div style={{ borderRadius:12, padding:'12px 14px', background:T.inset, border:`1px solid ${T.bdHair}`, display:'flex', flexDirection:'column', gap:6 }}>
+                  <span style={{ fontSize:10, fontFamily:T.mono, textTransform:'uppercase', letterSpacing:'0.14em', color:T.txLow }}>Observed sequence</span>
+                  <p style={{ fontSize:12, color:T.txMid, lineHeight:1.65 }}>{aiText}</p>
+                </div>
+                <div style={{ display:'grid', gap:8, gridTemplateColumns:'repeat(auto-fit, minmax(160px, 1fr))' }}>
+                  <div style={{ borderRadius:12, padding:'12px 14px', background:'rgba(255,255,255,0.02)', border:`1px solid ${T.bdHair}` }}>
+                    <div style={{ fontSize:10, fontFamily:T.mono, textTransform:'uppercase', letterSpacing:'0.14em', color:T.txLow, marginBottom:4 }}>Likelihood</div>
+                    <div style={{ fontSize:16, fontWeight:700, color:T.txHigh, fontFamily:T.mono }}>High</div>
+                  </div>
+                  <div style={{ borderRadius:12, padding:'12px 14px', background:'rgba(255,255,255,0.02)', border:`1px solid ${T.bdHair}` }}>
+                    <div style={{ fontSize:10, fontFamily:T.mono, textTransform:'uppercase', letterSpacing:'0.14em', color:T.txLow, marginBottom:4 }}>Origin</div>
+                    <div style={{ fontSize:16, fontWeight:700, color:T.txHigh, fontFamily:T.mono }}>Internal</div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
+        </div>
 
-          {/* Substation Log Stream */}
-          <div className="rounded-xl border border-border bg-surface p-5 flex flex-col h-[230px] relative overflow-hidden">
-            <div className="flex items-center gap-2 mb-3 border-b border-border/60 pb-3">
-              <Terminal className="w-4 h-4 text-warning" />
-              <h3 className="text-sm font-bold font-mono text-[#E2E8F0] uppercase tracking-wider">SCADA DNP3 Frame Logs</h3>
+        <div className="flex flex-col gap-6">
+          <motion.div initial={{ opacity:0,y:12 }} animate={{ opacity:1,y:0 }} transition={{ duration:0.3,delay:0.12 }} style={cardStyle}>
+            <div style={{ padding:'18px 20px 12px', display:'flex', alignItems:'center', gap:12 }}>
+              <div style={{ width:32, height:32, borderRadius:8, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', background:'var(--accent-bg)', border:'1px solid var(--accent-ring)' }}>
+                <Globe style={{ width:15, height:15, color:T.accent }} />
+              </div>
+              <div>
+                <p style={{ fontSize:13, fontWeight:600, color:T.txHigh, lineHeight:1.2 }}>Threat Propagation</p>
+                <p style={{ fontSize:10, color:T.txLow, marginTop:2 }}>Cross-domain spread visualization</p>
+              </div>
             </div>
-            
-            <div className="flex-1 overflow-y-auto space-y-1.5 font-mono text-[10px] scrollbar-thin">
-              {liveEvents.length === 0 ? (
-                <div className="text-[#3d566e] py-8 text-center">Monitoring industrial sensor network...</div>
-              ) : (
-                liveEvents.slice(0, 8).map(event => (
-                  <div key={event.id} className="flex items-start gap-1.5 py-1 px-1.5 rounded hover:bg-bg-2 text-[#8FA3BF] transition-colors">
-                    <span className="text-[#3d566e] shrink-0">{formatRelativeTime(event.timestamp)}</span>
-                    <span className="text-primary shrink-0 font-bold">[{selectedSubstation.id.toUpperCase()}]</span>
-                    <span className="truncate">{event.description}</span>
-                  </div>
-                ))
-              )}
+            <div style={{ margin:'0 20px 20px', borderRadius:16, overflow:'hidden', minHeight:176 }}>
+              <ThreatMap />
             </div>
-          </div>
+            <div style={{ padding:'12px 24px 20px', borderTop:`1px solid ${T.bdHair}`, display:'flex', flexDirection:'column', gap:8 }}>
+              {[{ c:T.danger, label:'1 latent anomaly (RU)' }, { c:T.accent, label:'4.2k secure nodes' }].map(({ c, label }) => (
+                <div key={label} style={{ display:'flex', alignItems:'center', gap:8, fontSize:11 }}>
+                  <span style={{ width:8, height:8, borderRadius:'50%', background:c, boxShadow:`0 0 5px ${c}`, flexShrink:0 }} />
+                  <span style={{ color:T.txMid }}>{label}</span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
+          <motion.div initial={{ opacity:0,y:12 }} animate={{ opacity:1,y:0 }} transition={{ duration:0.3,delay:0.17 }}
+            style={{ ...cardStyle, borderTop:`2px solid ${sc}`, boxShadow:`var(--sh-md), 0 0 0 1px ${sc}08 inset` }}>
+            <div style={{ ...cardHeaderStyle, borderBottom:`1px solid ${T.bdHair}` }}>
+              <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                <div style={{ width:32, height:32, borderRadius:8, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', background:'var(--accent-bg)', border:'1px solid var(--accent-ring)' }}>
+                  <Activity style={{ width:15, height:15, color:T.accent }} />
+                </div>
+                <p style={{ fontSize:13, fontWeight:600, color:T.txHigh }}>Recommended Response</p>
+              </div>
+            </div>
+
+            <div style={{ padding:'20px 24px', display:'flex', flexDirection:'column', gap:16 }}>
+              <div>
+                <p style={{ fontSize:10, fontFamily:T.mono, textTransform:'uppercase', letterSpacing:'0.14em', color:T.txLow, marginBottom:5 }}>Assessed Target</p>
+                <p style={{ fontSize:14, fontWeight:700, fontFamily:T.mono, color:T.accent }}>{selNode?.label ?? 'SUBSTATION_02'}</p>
+              </div>
+
+              <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                <p style={{ fontSize:10, fontFamily:T.mono, textTransform:'uppercase', letterSpacing:'0.14em', color:T.txLow }}>Automated Protections</p>
+                <ProtectionRow label="Isolate Breaker #4 (Sub-02)"   active={alert==='trip'}              accent={T.danger} />
+                <ProtectionRow label="Disable Compromised SCADA User" active={alert==='trip'||alert==='warn'} accent={T.warn}   />
+                <ProtectionRow label="DNP3 Session Encryption Force"  active={true}                       accent={T.accent} />
+              </div>
+
+              <button
+                className="transition-all duration-150 hover:brightness-110 active:scale-[0.98]"
+                style={{
+                  width        : '100%', padding: '12px 0',
+                  borderRadius : 12,
+                  background   : T.accent,
+                  color        : '#020912',
+                  fontSize     : 12, fontWeight: 700,
+                  fontFamily   : T.mono,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  border       : 'none', cursor: 'pointer',
+                  boxShadow    : '0 4px 20px rgba(0,229,255,0.24)',
+                }}
+              >
+                Execute Countermeasures [6]
+              </button>
+            </div>
+          </motion.div>
         </div>
       </div>
+
+      <motion.div initial={{ opacity:0,y:12 }} animate={{ opacity:1,y:0 }} transition={{ duration:0.3,delay:0.22 }}
+        className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <MetricCard label="Load Balance"       value="74.2"  unit="%"     trend="up"   trendLabel="+2.1% vs last hour" icon={<TrendingUp  style={{ width:15,height:15 }} />} accent={T.accent} />
+        <MetricCard label="Packet Drop"        value="0.001" unit="%"     trend="flat" trendLabel="Nominal"            icon={<Cpu         style={{ width:15,height:15 }} />} accent={T.success} />
+        <MetricCard label="Encryption Entropy" value="7.99"  unit="/ 8.0"             trendLabel="Near-perfect"       icon={<ShieldOff   style={{ width:15,height:15 }} />} accent={T.info} />
+        <MetricCard label="Active Watchdogs"   value="1,024"                           trendLabel="Running"           icon={<Eye         style={{ width:15,height:15 }} />} accent={T.warn} />
+      </motion.div>
     </PageContainer>
   )
 }

@@ -1,154 +1,165 @@
-import { Bell, Search, Wifi, WifiOff, Server, Clock, ShieldCheck } from 'lucide-react'
+import { Bell, Search, Server, Cpu, Lock, Menu } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth.store'
 import { useEventsStore } from '@/stores/events.store'
-import { Button } from '@/components/ui'
+import { useUIStore } from '@/stores/ui.store'
 import { Tooltip } from '@/components/ui'
-import { cn } from '@/lib/utils'
-import { useLocation } from 'react-router-dom'
 
-interface TopbarProps {
-  title?: string
-  description?: string
+function HudChip({ icon, label, value, valColor }: {
+  icon: React.ReactNode; label: string; value: string; valColor?: string
+}) {
+  return (
+    <div
+      className="hidden md:flex items-center gap-2 select-none"
+      style={{
+        height     : 32,
+        padding    : '0 12px',
+        borderRadius: 8,
+        background : 'var(--bg-inset)',
+        border     : '1px solid var(--bd-default)',
+        fontFamily : 'var(--font-mono)',
+        fontSize   : 11,
+        gap        : 7,
+      }}
+    >
+      <span style={{ color: 'var(--tx-low)', display: 'flex' }}>{icon}</span>
+      {label && <span style={{ color: 'var(--tx-low)' }}>{label}</span>}
+      <span style={{ fontWeight: 600, color: valColor ?? 'var(--accent)' }}>{value}</span>
+    </div>
+  )
 }
 
-const PAGE_META: Record<string, { label: string; sub: string }> = {
-  '/dashboard':        { label: 'Dashboard',        sub: 'Live threat monitoring overview' },
-  '/incidents':        { label: 'Incidents',         sub: 'Active security incidents' },
-  '/attack-graph':     { label: 'Attack Graph',      sub: 'Visual attack chain mapping' },
-  '/ai-investigation': { label: 'AI Investigation',  sub: 'Autonomous threat analysis' },
-  '/mitre':            { label: 'MITRE ATT&CK',      sub: 'Technique mapping framework' },
-  '/threat-intel':     { label: 'Threat Intelligence', sub: 'IOC & threat actor data' },
-  '/reports':          { label: 'Reports',           sub: 'Incident & executive reports' },
-  '/simulator':        { label: 'Attack Simulator',  sub: 'Test detection capabilities' },
-  '/settings':         { label: 'Settings',          sub: 'Platform configuration' },
-}
-
-export function Topbar({ title, description }: TopbarProps) {
-  const { user, logout } = useAuthStore()
-  const { connectionStatus, liveEvents } = useEventsStore()
-  const location = useLocation()
+export function Topbar() {
+  const { user }                  = useAuthStore()
+  const { liveEvents }            = useEventsStore()
+  const { sidebarCollapsed, toggleSidebar } = useUIStore()
 
   const criticalCount = liveEvents.filter(e => e.severity === 'critical').length
-
-  // Resolve page meta
-  const pagePath = Object.keys(PAGE_META).find(k => location.pathname.startsWith(k)) ?? ''
-  const pageMeta = PAGE_META[pagePath]
-  const pageLabel = title ?? pageMeta?.label ?? 'Sentinel AI'
-  const pageDesc  = description ?? pageMeta?.sub ?? ''
-
-  const now = new Date()
-  const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  const hasCritical   = criticalCount > 0
+  const hasHigh       = liveEvents.some(e => e.severity === 'high')
+  const threatLevel   = hasCritical ? 'CRITICAL' : hasHigh ? 'HIGH' : 'LOW'
+  const threatColor   = hasCritical ? 'var(--danger)' : hasHigh ? 'var(--warn)' : 'var(--accent)'
 
   return (
-    <header className="h-14 flex items-center justify-between px-5 border-b border-border bg-bg-2/90 backdrop-blur-sm sticky top-0 z-20 shrink-0">
-      {/* Subtle bottom glow line */}
-      <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
+    <header
+      className="flex items-center shrink-0 relative"
+      style={{
+        height       : 76,
+        padding      : '0 24px',
+        gap          : 12,
+        background   : 'var(--bg-chrome)',
+        borderBottom : '1px solid var(--bd-default)',
+      }}
+    >
+      {/* hairline glow under header */}
+      <div
+        aria-hidden="true"
+        className="absolute bottom-0 pointer-events-none"
+        style={{
+          left      : '20%', right: '20%', height: 1,
+          background: 'linear-gradient(90deg, transparent, rgba(0,217,180,0.25), transparent)',
+        }}
+      />
 
-      {/* Left — page title */}
-      <div className="flex flex-col justify-center min-w-0">
-        <div className="flex items-center gap-2">
-          <h1 className="text-sm font-bold text-[#E2E8F0] leading-tight tracking-tight truncate">{pageLabel}</h1>
-          <div className="hidden sm:flex items-center gap-1.5 text-[10px] font-mono text-[#3d566e] uppercase tracking-wider">
-            <span className="opacity-40">//</span>
-            <span>SENTINEL AI</span>
-          </div>
-        </div>
-        {pageDesc && <p className="text-[11px] text-[#3d566e] truncate font-mono">{pageDesc}</p>}
+      {/* sidebar toggle (collapsed only) */}
+      {sidebarCollapsed && (
+        <Tooltip content="Open sidebar" side="bottom">
+          <button
+            onClick={toggleSidebar}
+            className="flex items-center justify-center rounded-lg cursor-pointer transition-all shrink-0"
+            style={{ width: 32, height: 32, border: '1px solid var(--bd-default)', color: 'var(--tx-low)' }}
+          >
+            <Menu style={{ width: 15, height: 15 }} />
+          </button>
+        </Tooltip>
+      )}
+
+      {/* search */}
+      <div
+        className="flex items-center shrink-0 cursor-text"
+        style={{
+          width       : 220,
+          height      : 36,
+          padding     : '0 12px',
+          gap         : 8,
+          borderRadius: 10,
+          background  : 'var(--bg-inset)',
+          border      : '1px solid var(--bd-default)',
+        }}
+      >
+        <Search style={{ width: 13, height: 13, color: 'var(--tx-low)', flexShrink: 0 }} />
+        <span style={{ fontSize: 12, color: 'var(--tx-disabled)', fontFamily: 'var(--font-mono)', userSelect: 'none' }}>
+          Global Mesh Search...
+        </span>
       </div>
 
-      {/* Right */}
-      <div className="flex items-center gap-2 shrink-0">
-        {/* HUD system chips */}
-        <div className="hidden lg:flex items-center gap-1.5">
-          {/* Nodes */}
-          <div className="flex items-center gap-1.5 h-7 px-2.5 rounded-md text-[10px] font-mono font-medium border border-border bg-surface text-[#3d566e]">
-            <Server className="w-3 h-3 text-primary/60" />
-            <span className="text-[#8FA3BF]">NODES:</span>
-            <span className="text-primary">4,521</span>
-          </div>
-          {/* Latency */}
-          <div className="flex items-center gap-1.5 h-7 px-2.5 rounded-md text-[10px] font-mono font-medium border border-border bg-surface text-[#3d566e]">
-            <Clock className="w-3 h-3 text-warning/60" />
-            <span className="text-[#8FA3BF]">LATENCY:</span>
-            <span className="text-warning">12ms</span>
-          </div>
-          {/* Encryption */}
-          <div className="flex items-center gap-1.5 h-7 px-2.5 rounded-md text-[10px] font-mono font-medium border border-border bg-surface text-[#3d566e]">
-            <ShieldCheck className="w-3 h-3 text-success/60" />
-            <span className="text-success">AES-256</span>
-          </div>
-        </div>
+      {/* HUD chips – centred */}
+      <div className="flex-1 hidden items-center justify-center lg:flex" style={{ gap: 8 }}>
+        <HudChip icon={<Server style={{ width: 12, height: 12 }} />} label="NODES:"   value="4,521" />
+        <HudChip icon={<Cpu    style={{ width: 12, height: 12 }} />} label="LATENCY:" value="12ms"  valColor="var(--warn)" />
+        <HudChip icon={<Lock   style={{ width: 12, height: 12 }} />} label=""         value="AES-256" />
+      </div>
 
-        {/* Separator */}
-        <div className="hidden lg:block w-px h-5 bg-border" />
+      {/* right: bell + divider + user */}
+      <div className="flex items-center shrink-0" style={{ gap: 10 }}>
 
-        {/* WS Status */}
-        <Tooltip content={`Stream: ${connectionStatus}`} side="bottom">
-          <div className={cn(
-            'flex items-center gap-1.5 h-7 px-2.5 rounded-md text-[10px] font-mono font-medium border transition-colors',
-            connectionStatus === 'connected'
-              ? 'border-success/20 bg-success/5 text-success'
-              : connectionStatus === 'connecting'
-              ? 'border-warning/20 bg-warning/5 text-warning'
-              : 'border-danger/20 bg-danger/5 text-danger'
-          )}>
-            {connectionStatus === 'connected' ? (
-              <>
-                <span className="w-1.5 h-1.5 rounded-full bg-success shadow-[0_0_6px_var(--color-success)] animate-pulse" />
-                <Wifi className="w-3 h-3" />
-                <span className="hidden sm:inline">LIVE</span>
-              </>
-            ) : (
-              <>
-                <WifiOff className="w-3 h-3" />
-                <span className="hidden sm:inline uppercase">{connectionStatus}</span>
-              </>
-            )}
-          </div>
-        </Tooltip>
-
-        {/* Notifications */}
-        <Tooltip content={criticalCount > 0 ? `${criticalCount} critical alert${criticalCount > 1 ? 's' : ''}` : 'No critical alerts'} side="bottom">
+        {/* bell */}
+        <Tooltip content={hasCritical ? `${criticalCount} critical alert${criticalCount > 1 ? 's' : ''}` : 'No alerts'} side="bottom">
           <button
-            className={cn(
-              'relative w-8 h-8 rounded-lg flex items-center justify-center transition-all border cursor-pointer',
-              criticalCount > 0
-                ? 'bg-danger/10 border-danger/25 text-danger animate-[danger-pulse_2s_ease-in-out_infinite]'
-                : 'bg-transparent border-border text-[#3d566e] hover:bg-surface hover:text-[#8FA3BF]'
-            )}
+            className="relative flex items-center justify-center rounded-lg cursor-pointer transition-all"
+            style={{
+              width     : 32, height: 32,
+              background: hasCritical ? 'var(--danger-bg)' : 'transparent',
+              border    : `1px solid ${hasCritical ? 'var(--danger-ring)' : 'var(--bd-default)'}`,
+              color     : hasCritical ? 'var(--danger)' : 'var(--tx-low)',
+            }}
           >
-            <Bell className="w-4 h-4" />
-            {criticalCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-danger text-white text-[9px] font-bold flex items-center justify-center shadow-[0_0_8px_rgba(231,90,67,0.6)]">
+            <Bell style={{ width: 15, height: 15 }} />
+            {hasCritical && (
+              <span
+                className="absolute flex items-center justify-center rounded-full"
+                style={{
+                  top: -6, right: -6,
+                  minWidth: 16, height: 16,
+                  padding   : '0 4px',
+                  background: 'var(--danger)',
+                  fontSize  : 9, fontWeight: 700,
+                  color     : '#fff',
+                }}
+              >
                 {criticalCount > 9 ? '9+' : criticalCount}
               </span>
             )}
           </button>
         </Tooltip>
 
-        {/* Search */}
-        <Tooltip content="Search (⌘K)" side="bottom">
-          <button className="w-8 h-8 rounded-lg flex items-center justify-center border border-border bg-transparent text-[#3d566e] hover:bg-surface hover:text-[#8FA3BF] transition-all cursor-pointer">
-            <Search className="w-4 h-4" />
-          </button>
-        </Tooltip>
+        {/* divider */}
+        <div style={{ width: 1, height: 24, background: 'var(--bd-default)' }} />
 
-        {/* User */}
-        <div className="flex items-center gap-2 pl-2 border-l border-border">
-          {/* Avatar */}
-          <div className="relative">
-            <div className="absolute -inset-0.5 rounded-full bg-gradient-to-br from-primary to-secondary opacity-60" />
-            <div className="relative w-7 h-7 rounded-full bg-gradient-to-br from-surface-2 to-surface flex items-center justify-center text-primary text-xs font-bold font-mono">
-              {user?.name?.charAt(0).toUpperCase() ?? 'A'}
-            </div>
+        {/* user */}
+        <div className="flex items-center" style={{ gap: 10 }}>
+          {/* avatar */}
+          <div
+            className="flex items-center justify-center rounded-lg shrink-0"
+            style={{
+              width     : 32, height: 32,
+              background: 'var(--accent-bg)',
+              border    : '1px solid var(--accent-ring)',
+              fontFamily: 'var(--font-mono)',
+              fontSize  : 13, fontWeight: 700,
+              color     : 'var(--accent)',
+            }}
+          >
+            {user?.name?.charAt(0).toUpperCase() ?? 'D'}
           </div>
-          <div className="hidden md:flex flex-col">
-            <span className="text-[12px] font-semibold text-[#E2E8F0] leading-tight">{user?.name ?? 'Analyst'}</span>
-            <span className="text-[9px] text-[#3d566e] font-mono uppercase tracking-wider leading-tight">{user?.role ?? 'analyst'}</span>
+
+          <div className="hidden sm:flex flex-col" style={{ gap: 2 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--tx-high)', lineHeight: 1 }}>
+              {user?.name ?? 'Demo Analyst'}
+            </span>
+            <span style={{ fontSize: 10, color: threatColor, fontFamily: 'var(--font-mono)', letterSpacing: '0.04em', lineHeight: 1 }}>
+              THREAT LEVEL: {threatLevel}
+            </span>
           </div>
-          <Button variant="ghost" size="sm" onClick={logout} className="text-[11px] text-[#3d566e] hover:text-danger ml-1 h-7 px-2">
-            Exit
-          </Button>
         </div>
       </div>
     </header>

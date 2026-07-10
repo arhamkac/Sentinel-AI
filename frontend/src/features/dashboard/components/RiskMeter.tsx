@@ -1,5 +1,4 @@
 import { motion } from 'framer-motion'
-import { CardHeader, CardTitle, CardContent } from '@/components/ui'
 import { Shield, TrendingUp } from 'lucide-react'
 
 interface RiskMeterProps {

@@ -8,6 +8,7 @@ export function useEventStream() {
   const reconnectCount = useRef(0)
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const { addEvent, setConnected } = useEventsStore()
+  const connectRef = useRef<() => void>(() => {})
 
   const connect = useCallback(() => {
     const token = localStorage.getItem('access_token')
@@ -28,14 +29,18 @@ export function useEventStream() {
         try {
           const event: SecurityEvent = JSON.parse(e.data)
           addEvent(event)
-        } catch {}
+        } catch (err) {
+          console.warn("WebSocket parse error:", err)
+        }
       }
 
       ws.onclose = () => {
         setConnected('disconnected')
         if (reconnectCount.current < WS_MAX_RECONNECT) {
           reconnectCount.current++
-          reconnectTimer.current = setTimeout(connect, WS_RECONNECT_DELAY)
+          reconnectTimer.current = setTimeout(() => {
+            connectRef.current()
+          }, WS_RECONNECT_DELAY)
         } else {
           setConnected('error')
         }
@@ -45,10 +50,15 @@ export function useEventStream() {
         setConnected('error')
         ws.close()
       }
-    } catch {
+    } catch (err) {
+      console.warn("WebSocket setup error:", err)
       setConnected('error')
     }
   }, [addEvent, setConnected])
+
+  useEffect(() => {
+    connectRef.current = connect
+  }, [connect])
 
   const disconnect = useCallback(() => {
     if (reconnectTimer.current) {

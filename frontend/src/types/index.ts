@@ -13,6 +13,10 @@ export type EventType =
   | 'data_exfiltration'
   | 'command_and_control'
   | 'persistence'
+  | 'endpoint'
+  | 'network'
+  | 'scada'
+  | 'correlation'
 
 export type MitreTactic =
   | 'initial_access'

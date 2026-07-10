@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react'
+import { useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import ReactFlow, {
@@ -165,11 +165,14 @@ export function AttackGraphPage() {
   const { nodes, edges } = useMemo(() => buildFlowElements(displayGraph), [displayGraph])
 
   return (
-    <PageContainer
-      title="Attack Graph"
-      description="Visual map of attack progression and lateral movement"
-    >
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-4">
+    <PageContainer>
+      {/* Page header */}
+      <div>
+        <div className="text-[9px] font-mono uppercase tracking-[0.15em] mb-1" style={{ color: '#3d566e' }}>Cyber Kill Chain Visualization</div>
+        <h1 className="text-xl font-bold font-mono" style={{ color: '#E2E8F0' }}>Attack Graph</h1>
+        <p className="text-[11px] font-mono mt-0.5" style={{ color: '#8FA3BF' }}>Visual map of attack progression and lateral movement</p>
+      </div>
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-5">
         {/* Graph */}
         <motion.div
           className="xl:col-span-3"

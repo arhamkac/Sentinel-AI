@@ -14,7 +14,11 @@ export type EventType =
   | 'lateral_movement'
   | 'data_exfiltration'
   | 'command_and_control'
-  | 'persistence';
+  | 'persistence'
+  | 'endpoint'
+  | 'network'
+  | 'scada'
+  | 'correlation';
 
 export type MitreTactic =
   | 'initial_access'
