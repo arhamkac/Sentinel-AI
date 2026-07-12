@@ -14,6 +14,7 @@ import {
 import { incidentsService } from '@/services/incidents.service'
 import { formatDate, formatRelativeTime } from '@/lib/utils'
 import type { Incident } from '@/types'
+import { SOARPlaybook } from '@/features/incidents/components/SOARPlaybook'
 
 const MOCK_INCIDENT: Incident = {
   id: '1',
@@ -58,7 +59,7 @@ const MOCK_INCIDENT: Incident = {
 export function IncidentDetailPage() {
   const { id } = useParams<{ id: string }>()
   const queryClient = useQueryClient()
-  const [activeTab, setActiveTab] = useState<'narrative' | 'prediction' | 'timeline' | 'assets'>('narrative')
+  const [activeTab, setActiveTab] = useState<'narrative' | 'prediction' | 'timeline' | 'assets' | 'soar'>('narrative')
 
   const { data: incident, isLoading } = useQuery({
     queryKey: ['incident', id],
@@ -136,7 +137,7 @@ export function IncidentDetailPage() {
         <div className="xl:col-span-2 flex flex-col gap-4">
           {/* Tabs */}
           <div className="flex gap-1 border-b border-border">
-            {(['narrative', 'prediction', 'assets'] as const).map(tab => (
+            {(['narrative', 'prediction', 'assets', 'soar'] as const).map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -146,7 +147,7 @@ export function IncidentDetailPage() {
                     : 'text-[#3d566e] border-transparent hover:text-[#E2E8F0]'
                 }`}
               >
-                {tab === 'narrative' ? 'Threat Narrative' : tab === 'prediction' ? 'AI Prediction' : 'Assets & Users'}
+                {tab === 'narrative' ? 'Threat Narrative' : tab === 'prediction' ? 'AI Prediction' : tab === 'soar' ? 'SOAR Actions' : 'Assets & Users'}
               </button>
             ))}
           </div>
@@ -262,6 +263,19 @@ export function IncidentDetailPage() {
               </div>
             </motion.div>
           )}
+          {activeTab === 'soar' && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
+              <Card>
+                <CardContent className="pt-5">
+                  <SOARPlaybook
+                    incidentId={display.id}
+                    affectedAssets={display.affected_assets as string[]}
+                    affectedUsers={display.affected_users as string[]}
+                  />
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
         </div>
 
         {/* Side panel */}
@@ -275,26 +289,33 @@ export function IncidentDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="flex flex-col gap-3">
-                {display.mitre_techniques.map(t => (
-                  <div key={t.technique_id} className="flex flex-col gap-1">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="primary" className="text-[10px]">{t.technique_id}</Badge>
-                        <span className="text-xs text-[#E2E8F0]">{t.technique_name}</span>
+                {(display.mitre_techniques || []).map(t => {
+                  const id = (t as any).technique_id || (t as any).id || 'Txxx'
+                  const name = (t as any).technique_name || (t as any).name || 'Unknown Technique'
+                  const confidence = typeof t.confidence === 'number' ? t.confidence : 1.0
+                  const tactic = t.tactic || 'General'
+
+                  return (
+                    <div key={id} className="flex flex-col gap-1">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="primary" className="text-[10px]">{id}</Badge>
+                          <span className="text-xs text-[#E2E8F0]">{name}</span>
+                        </div>
+                        <span className="text-[10px] text-[#3d566e]">{Math.round(confidence * 100)}%</span>
                       </div>
-                      <span className="text-[10px] text-[#3d566e]">{Math.round(t.confidence * 100)}%</span>
+                      <div className="h-1 rounded-full bg-border overflow-hidden">
+                        <motion.div
+                          className="h-full rounded-full bg-primary"
+                          initial={{ width: 0 }}
+                          animate={{ width: `${confidence * 100}%` }}
+                          transition={{ duration: 0.6 }}
+                        />
+                      </div>
+                      <span className="text-[10px] text-[#3d566e] capitalize">{tactic.replace(/_/g, ' ')}</span>
                     </div>
-                    <div className="h-1 rounded-full bg-border overflow-hidden">
-                      <motion.div
-                        className="h-full rounded-full bg-primary"
-                        initial={{ width: 0 }}
-                        animate={{ width: `${t.confidence * 100}%` }}
-                        transition={{ duration: 0.6 }}
-                      />
-                    </div>
-                    <span className="text-[10px] text-[#3d566e] capitalize">{t.tactic.replace(/_/g, ' ')}</span>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </CardContent>
           </Card>

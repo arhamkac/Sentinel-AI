@@ -245,3 +245,84 @@ code, pre, kbd, samp { font-family: var(--font-mono); }
 }
 .react-flow__edge-path { stroke: var(--bd-strong); }
 .react-flow__attribution { display: none !important; }
+
+/* ══════════════════════════════════════════════════════════════════
+   GLASSMORPHISM
+══════════════════════════════════════════════════════════════════ */
+.glass-card {
+  background   : rgba(10, 18, 36, 0.52);
+  backdrop-filter: blur(12px) saturate(1.4);
+  -webkit-backdrop-filter: blur(12px) saturate(1.4);
+  border       : 1px solid rgba(22, 32, 48, 0.55);
+  box-shadow   : 0 8px 32px 0 rgba(0, 0, 0, 0.42),
+                 inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.glass-panel {
+  background   : rgba(11, 18, 32, 0.70);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border       : 1px solid rgba(0, 229, 255, 0.08);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   DANGER PULSE
+══════════════════════════════════════════════════════════════════ */
+@keyframes danger-pulse {
+  0%, 100% { box-shadow: 0 0 4px rgba(255, 77, 109, 0.25); }
+  50%       { box-shadow: 0 0 20px rgba(255, 77, 109, 0.65), 0 0 8px rgba(255, 77, 109, 0.4); }
+}
+@keyframes accent-pulse {
+  0%, 100% { box-shadow: 0 0 4px rgba(0, 229, 255, 0.20); }
+  50%       { box-shadow: 0 0 18px rgba(0, 229, 255, 0.55); }
+}
+@keyframes warn-pulse {
+  0%, 100% { box-shadow: 0 0 4px rgba(245, 158, 11, 0.20); }
+  50%       { box-shadow: 0 0 16px rgba(245, 158, 11, 0.50); }
+}
+.pulse-danger  { animation: danger-pulse 2s ease-in-out infinite; }
+.pulse-accent  { animation: accent-pulse 2.5s ease-in-out infinite; }
+.pulse-warn    { animation: warn-pulse   2s ease-in-out infinite;   }
+
+/* ══════════════════════════════════════════════════════════════════
+   UTILITY CLASSES
+══════════════════════════════════════════════════════════════════ */
+.mono { font-family: var(--font-mono); }
+.text-accent  { color: var(--accent); }
+.text-danger  { color: var(--danger); }
+.text-warn    { color: var(--warn); }
+.text-success { color: var(--success); }
+.text-muted   { color: var(--tx-low); }
+
+/* Waveform canvas */
+.waveform-canvas { image-rendering: pixelated; }
+
+/* Frosted input */
+.input-frost {
+  background   : rgba(11, 19, 36, 0.70);
+  border       : 1px solid var(--bd-default);
+  border-radius: var(--r-md);
+  color        : var(--tx-high);
+  font-family  : var(--font-mono);
+  outline      : none;
+  transition   : border-color 0.15s;
+}
+.input-frost:focus { border-color: var(--accent-dim); }
+
+/* Badge pill */
+.badge {
+  display      : inline-flex;
+  align-items  : center;
+  gap          : 4px;
+  padding      : 2px 8px;
+  border-radius: 99px;
+  font-size    : 10px;
+  font-weight  : 600;
+  font-family  : var(--font-mono);
+  letter-spacing: 0.05em;
+  border       : 1px solid transparent;
+}
+.badge-danger  { color: var(--danger);  background: var(--danger-bg);  border-color: var(--danger-ring); }
+.badge-accent  { color: var(--accent);  background: var(--accent-bg);  border-color: var(--accent-ring); }
+.badge-warn    { color: var(--warn);    background: var(--warn-bg);    border-color: var(--warn-ring); }
+.badge-success { color: var(--success); background: var(--success-bg); }
+.badge-muted   { color: var(--tx-low);  background: rgba(255,255,255,0.04); border-color: var(--bd-hairline); }

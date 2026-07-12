@@ -7,6 +7,8 @@ import {
 } from 'lucide-react'
 import { PageContainer } from '@/components/layout'
 import { useEventsStore } from '@/stores/events.store'
+import { AnomalyWaveform } from '@/features/dashboard/components/AnomalyWaveform'
+import { LiveEventStream } from '@/features/dashboard/components/LiveEventStream'
 
 /* ─── shared token shorthands ─────────────────────────────────── */
 const T = {
@@ -384,6 +386,22 @@ export function DashboardPage() {
         <SummaryCard title="Threat Propagation" value="14" detail="Nodes linked to the current campaign" accent={T.warn} />
       </div>
 
+      {/* ── Anomaly Waveform (Task B4) ── */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <AnomalyWaveform
+          riskScore={alert === 'trip' ? 0.91 : alert === 'warn' ? 0.58 : 0.12}
+          eventRate={liveEvents.length * 2 + 25}
+          label="IT/OT Risk Waveform"
+          height={130}
+        />
+        <div style={{
+          background: T.card, border: `1px solid ${T.bdDef}`, borderRadius: 20,
+          overflow: 'hidden', height: 130, boxShadow: 'var(--sh-md)',
+        }}>
+          <LiveEventStream />
+        </div>
+      </div>
+
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(320px,0.95fr)]">
         <div className="flex flex-col gap-6">
           <motion.div initial={{ opacity:0,y:12 }} animate={{ opacity:1,y:0 }} transition={{ duration:0.3,delay:0.06 }} style={cardStyle}>
@@ -405,7 +423,7 @@ export function DashboardPage() {
           </motion.div>
 
           <motion.div initial={{ opacity:0,y:12 }} animate={{ opacity:1,y:0 }} transition={{ duration:0.3,delay:0.1 }}
-            className="terminal-overlay scan-line flex min-h-[280px] flex-col"
+            className="terminal-overlay scan-line flex min-h-70 flex-col"
             style={{ ...cardStyle, minHeight: 280 }}>
             <div style={cardHeaderStyle}>
               <div style={{ display:'flex', alignItems:'center', gap:12 }}>

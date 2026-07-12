@@ -6,85 +6,195 @@ import ReactFlow, {
   type Node, type Edge, type NodeTypes,
   MarkerType, Handle, Position,
 } from 'reactflow'
+import 'reactflow/dist/style.css'
 import { motion } from 'framer-motion'
-import { GitBranch, AlertTriangle, Monitor, User, Network, Target } from 'lucide-react'
+import { GitBranch, AlertTriangle, Monitor, User, Network, Target, Skull, Cpu } from 'lucide-react'
 import { PageContainer } from '@/components/layout'
 import { Card, CardContent, Badge, SeverityBadge, Skeleton } from '@/components/ui'
 import { incidentsService } from '@/services/incidents.service'
 import type { AttackGraph } from '@/types'
 import { getSeverityColor } from '@/lib/utils'
 
-// ─── Custom node types ───────────────────────────────────────────
-function TechniqueNode({ data }: { data: { label: string; severity?: string; mitre_id?: string } }) {
-  const color = data.severity ? getSeverityColor(data.severity) : '#00E5FF'
+// ─── Glowing node wrapper component ──────────────────────────────
+interface NodeContainerProps {
+  icon: React.ElementType
+  title: string
+  subtitle?: string
+  color: string
+  badge?: string
+  target?: boolean
+  source?: boolean
+}
+
+function NodeContainer({
+  icon: Icon,
+  title,
+  subtitle,
+  color,
+  badge,
+  target = true,
+  source = true,
+}: NodeContainerProps) {
   return (
-    <>
-      <Handle type="target" position={Position.Left} style={{ background: color, border: 'none' }} />
+    <div style={{ position: 'relative', fontFamily: 'var(--font-mono)' }}>
+      {/* Ambient shadow glow */}
       <div
-        className="px-3 py-2 rounded-lg border text-xs font-medium max-w-[160px]"
         style={{
-          background: `${color}15`,
-          borderColor: `${color}30`,
-          color,
-          boxShadow: `0 0 12px ${color}20`,
+          position: 'absolute',
+          inset: 0,
+          borderRadius: 'var(--r-xl)',
+          background: color,
+          filter: 'blur(8px)',
+          opacity: 0.18,
+          zIndex: -1,
+        }}
+      />
+
+      {/* Target connection point */}
+      {target && (
+        <Handle
+          type="target"
+          position={Position.Left}
+          style={{
+            background: color,
+            border: '2px solid #071022',
+            width: 8,
+            height: 8,
+            boxShadow: `0 0 6px ${color}`,
+          }}
+        />
+      )}
+
+      {/* Main card box */}
+      <div
+        className="px-4 py-3 rounded-xl border flex flex-col justify-center min-w-[200px] max-w-[240px] transition-all duration-200"
+        style={{
+          background: 'rgba(7, 16, 34, 0.85)',
+          borderColor: `${color}35`,
+          borderLeft: `4px solid ${color}`,
+          boxShadow: `0 8px 32px 0 rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.03)`,
         }}
       >
-        {data.mitre_id && <div className="text-[10px] opacity-70 mb-0.5">{data.mitre_id}</div>}
-        <div className="truncate">{data.label}</div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
+          <span style={{ fontSize: 8, color: 'var(--tx-low)', letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: 600 }}>
+            {badge || 'NODE'}
+          </span>
+          <Icon style={{ width: 12, height: 12, color }} />
+        </div>
+
+        <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--tx-high)', fontFamily: 'var(--font-sans)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {title}
+        </p>
+
+        {subtitle && (
+          <p style={{ fontSize: 9, color: 'var(--tx-low)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {subtitle}
+          </p>
+        )}
       </div>
-      <Handle type="source" position={Position.Right} style={{ background: color, border: 'none' }} />
-    </>
+
+      {/* Source connection point */}
+      {source && (
+        <Handle
+          type="source"
+          position={Position.Right}
+          style={{
+            background: color,
+            border: '2px solid #071022',
+            width: 8,
+            height: 8,
+            boxShadow: `0 0 6px ${color}`,
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+function TechniqueNode({ data }: { data: { label: string; severity?: string; mitre_id?: string } }) {
+  const color = data.severity ? getSeverityColor(data.severity) : 'var(--warn)'
+  return (
+    <NodeContainer
+      icon={GitBranch}
+      title={data.label}
+      subtitle={data.mitre_id}
+      color={color}
+      badge="mitre technique"
+    />
   )
 }
 
 function HostNode({ data }: { data: { label: string } }) {
   return (
-    <>
-      <Handle type="target" position={Position.Left} style={{ background: '#8FA3BF', border: 'none' }} />
-      <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-surface text-xs text-[#E2E8F0] max-w-[140px]">
-        <Monitor className="w-3.5 h-3.5 text-[#8FA3BF] shrink-0" />
-        <span className="truncate">{data.label}</span>
-      </div>
-      <Handle type="source" position={Position.Right} style={{ background: '#8FA3BF', border: 'none' }} />
-    </>
+    <NodeContainer
+      icon={Monitor}
+      title={data.label}
+      subtitle="Endpoint Host"
+      color="var(--accent)"
+      badge="host asset"
+    />
   )
 }
 
 function UserNode({ data }: { data: { label: string } }) {
   return (
-    <>
-      <Handle type="target" position={Position.Left} style={{ background: '#8FA3BF', border: 'none' }} />
-      <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-surface text-xs text-[#E2E8F0] max-w-[140px]">
-        <User className="w-3.5 h-3.5 text-[#3d566e] shrink-0" />
-        <span className="truncate">{data.label}</span>
-      </div>
-      <Handle type="source" position={Position.Right} style={{ background: '#8FA3BF', border: 'none' }} />
-    </>
+    <NodeContainer
+      icon={User}
+      title={data.label}
+      subtitle="Identity Profile"
+      color="#A78BFA"
+      badge="user credential"
+    />
   )
 }
 
 function NetworkNode({ data }: { data: { label: string } }) {
   return (
-    <>
-      <Handle type="target" position={Position.Left} style={{ background: '#8FA3BF', border: 'none' }} />
-      <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-bg-2 text-xs text-[#8FA3BF] max-w-[140px]">
-        <Network className="w-3.5 h-3.5 text-[#3d566e] shrink-0" />
-        <span className="truncate">{data.label}</span>
-      </div>
-      <Handle type="source" position={Position.Right} style={{ background: '#8FA3BF', border: 'none' }} />
-    </>
+    <NodeContainer
+      icon={Network}
+      title={data.label}
+      subtitle="Network Segment"
+      color="#34D399"
+      badge="network zone"
+    />
   )
 }
 
 function ObjectiveNode({ data }: { data: { label: string } }) {
   return (
-    <>
-      <Handle type="target" position={Position.Left} style={{ background: '#E75A43', border: 'none' }} />
-      <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-danger/30 bg-danger/10 text-xs text-danger max-w-[160px]">
-        <Target className="w-3.5 h-3.5 shrink-0" />
-        <span className="truncate font-semibold">{data.label}</span>
-      </div>
-    </>
+    <NodeContainer
+      icon={Target}
+      title={data.label}
+      subtitle="Impact Status"
+      color="var(--danger)"
+      badge="objective target"
+      source={false}
+    />
+  )
+}
+
+function ThreatActorNode({ data }: { data: { label: string } }) {
+  return (
+    <NodeContainer
+      icon={Skull}
+      title={data.label}
+      subtitle="Attribution Profile"
+      color="#F43F5E"
+      badge="threat actor"
+      target={false}
+    />
+  )
+}
+
+function PhysicalAssetNode({ data }: { data: { label: string } }) {
+  return (
+    <NodeContainer
+      icon={Cpu}
+      title={data.label}
+      subtitle="Grid Equipment"
+      color="var(--warn)"
+      badge="physical asset"
+    />
   )
 }
 
@@ -95,6 +205,8 @@ const nodeTypes: NodeTypes = {
   network: NetworkNode,
   process: HostNode,
   objective: ObjectiveNode,
+  threat_actor: ThreatActorNode,
+  physical_asset: PhysicalAssetNode,
 }
 
 // ─── Mock data ───────────────────────────────────────────────────
@@ -129,6 +241,12 @@ function buildFlowElements(graph: AttackGraph): { nodes: Node[]; edges: Edge[] }
     n1: { x: 0,   y: 200 }, n2: { x: 200, y: 100 }, n3: { x: 400, y: 200 },
     n4: { x: 600, y: 100 }, n5: { x: 800, y: 200 }, n6: { x: 1000, y: 100 },
     n7: { x: 1200, y: 200 }, n8: { x: 1400, y: 100 }, n9: { x: 1600, y: 200 },
+
+    attacker: { x: 0, y: 180 },
+    'ws-07': { x: 250, y: 100 },
+    'user-rsharma': { x: 500, y: 180 },
+    'scada-ws-02': { x: 750, y: 100 },
+    'breaker-4': { x: 1000, y: 180 },
   }
 
   const nodes: Node[] = graph.nodes.map(n => ({
@@ -144,9 +262,9 @@ function buildFlowElements(graph: AttackGraph): { nodes: Node[]; edges: Edge[] }
     target: e.target,
     label: e.label,
     animated: true,
-    style: { stroke: '#1E293B', strokeWidth: 1.5 },
-    labelStyle: { fill: '#64748B', fontSize: 10 },
-    markerEnd: { type: MarkerType.ArrowClosed, color: '#1E293B' },
+    style: { stroke: 'rgba(0, 217, 180, 0.45)', strokeWidth: 2, filter: 'drop-shadow(0 0 3px rgba(0, 217, 180, 0.25))' },
+    labelStyle: { fill: 'var(--tx-low)', fontSize: 9, fontFamily: 'var(--font-mono)' },
+    markerEnd: { type: MarkerType.ArrowClosed, color: 'var(--accent)' },
   }))
 
   return { nodes, edges }

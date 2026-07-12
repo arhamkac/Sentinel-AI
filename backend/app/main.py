@@ -9,7 +9,7 @@ from app.core.config import settings
 from app.db.session import get_db
 from app.core.dependencies import get_ws_user
 from app.websockets.manager import manager
-from app.api.v1.endpoints import auth, simulator, events, incidents
+from app.api.v1.endpoints import auth, simulator, events, incidents, ai
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -79,3 +79,4 @@ app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(simulator.router, prefix="/api/v1/simulator", tags=["simulator"])
 app.include_router(events.router, prefix="/api/v1/events", tags=["events"])
 app.include_router(incidents.router, prefix="/api/v1/incidents", tags=["incidents"])
+app.include_router(ai.router, prefix="/api/v1/ai", tags=["ai"])

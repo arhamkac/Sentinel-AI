@@ -9,6 +9,12 @@ export interface IncidentFilters {
   search?: string
 }
 
+export interface RemediatePayload {
+  action: string
+  target: string
+  reason?: string
+}
+
 export const incidentsService = {
   async list(filters: IncidentFilters = {}): Promise<PaginatedResponse<Incident>> {
     const { data } = await api.get<PaginatedResponse<Incident>>('/incidents', { params: filters })
@@ -42,6 +48,11 @@ export const incidentsService = {
 
   async getReport(id: string): Promise<IncidentReport> {
     const { data } = await api.get<IncidentReport>(`/incidents/${id}/report`)
+    return data
+  },
+
+  async remediate(id: string, payload: RemediatePayload): Promise<{ status: string; message: string }> {
+    const { data } = await api.post<{ status: string; message: string }>(`/incidents/${id}/remediate`, payload)
     return data
   },
 }

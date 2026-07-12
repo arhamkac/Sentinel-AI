@@ -46,23 +46,66 @@ The attacker followed a classic ransomware kill chain:
 
 The behavioral pattern is consistent with the **ALPHV/BlackCat** ransomware group, which is known for double extortion tactics.`
 
+function parseInlineBold(text: string) {
+  const parts = text.split(/\*\*(.*?)\*\*/g)
+  return parts.map((part, j) =>
+    j % 2 === 0 ? part : <strong key={j} style={{ color: BRIGHT }}>{part}</strong>
+  )
+}
+
 function FormattedContent({ content }: { content: string }) {
   const lines = content.split('\n')
   return (
-    <div className="flex flex-col gap-0.5">
+    <div className="flex flex-col gap-1.5 text-[11px] leading-relaxed" style={{ color: MUTED }}>
       {lines.map((line, i) => {
-        if (line.startsWith('**') && line.endsWith('**')) {
-          return <p key={i} className="font-bold" style={{ color: BRIGHT }}>{line.slice(2, -2)}</p>
+        const trimmed = line.trim()
+        if (!trimmed) {
+          return <div key={i} className="h-2" />
         }
-        if (line.startsWith('- ') || line.match(/^\d+\./)) {
-          return <p key={i} className="pl-3 text-[11px] font-mono" style={{ color: MUTED }}>{line}</p>
+
+        // 1. Headers (e.g. ### Title or **Title**)
+        if (trimmed.startsWith('#')) {
+          const match = trimmed.match(/^(#{1,6})\s+(.*)$/)
+          if (match) {
+            const level = match[1].length
+            const text = match[2]
+            const sizeClass = level === 1 ? 'text-sm font-black' : level === 2 ? 'text-xs font-extrabold' : 'text-[11px] font-bold'
+            return (
+              <p key={i} className={`${sizeClass} font-mono mt-2 mb-1`} style={{ color: BRIGHT }}>
+                {parseInlineBold(text)}
+              </p>
+            )
+          }
         }
-        const parts = line.split(/\*\*(.*?)\*\*/g)
+
+        // 2. Unordered lists (- or *)
+        if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+          const text = trimmed.slice(2)
+          return (
+            <div key={i} className="flex gap-2 pl-3 items-start font-mono text-[10.5px]">
+              <span style={{ color: PRIMARY, userSelect: 'none' }}>•</span>
+              <span className="flex-1">{parseInlineBold(text)}</span>
+            </div>
+          )
+        }
+
+        // 3. Ordered lists (1. or 2.)
+        const numMatch = trimmed.match(/^(\d+)\.\s+(.*)$/)
+        if (numMatch) {
+          const num = numMatch[1]
+          const text = numMatch[2]
+          return (
+            <div key={i} className="flex gap-2 pl-3 items-start font-mono text-[10.5px]">
+              <span style={{ color: PRIMARY, userSelect: 'none' }}>{num}.</span>
+              <span className="flex-1">{parseInlineBold(text)}</span>
+            </div>
+          )
+        }
+
+        // 4. Standard Paragraph
         return (
-          <p key={i} className="text-[11px] leading-relaxed" style={{ color: MUTED }}>
-            {parts.map((part, j) =>
-              j % 2 === 0 ? part : <strong key={j} style={{ color: BRIGHT }}>{part}</strong>
-            )}
+          <p key={i}>
+            {parseInlineBold(line)}
           </p>
         )
       })}

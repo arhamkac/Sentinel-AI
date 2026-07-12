@@ -56,6 +56,8 @@ export interface SecurityEvent {
   severity: Severity
   source_ip?: string
   destination_ip?: string
+  source_port?: number
+  destination_port?: number
   hostname: string
   user?: string
   process?: string
@@ -65,8 +67,9 @@ export interface SecurityEvent {
   mitre_technique_id?: string
   mitre_technique_name?: string
   incident_id?: string
+  is_simulated?: boolean
   timestamp: string
-  created_at: string
+  created_at?: string
 }
 
 // ─── Incidents ───────────────────────────────────────────────────
@@ -77,13 +80,16 @@ export interface Incident {
   severity: Severity
   status: IncidentStatus
   threat_narrative?: string
+  executive_summary?: string
   predicted_next_steps?: PredictedStep[]
   affected_assets: string[]
   affected_users: string[]
   mitre_techniques: MitreTechniqueRef[]
+  recommendations?: Array<Record<string, unknown>>
   event_count: number
   assigned_to?: string
   organization_id: string
+  is_simulated?: boolean
   created_at: string
   updated_at: string
   resolved_at?: string

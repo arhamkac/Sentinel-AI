@@ -1,0 +1,443 @@
+﻿import { useState, useEffect, useMemo, useRef } from 'react'
+import { motion } from 'framer-motion'
+import { Terminal, Globe, Activity } from 'lucide-react'
+import { PageContainer } from '@/components/layout'
+import { useEventsStore } from '@/stores/events.store'
+
+/* ─── shared token shorthands ─────────────────────────────────── */
+const T = {
+  accent  : 'var(--accent)',
+  danger  : 'var(--danger)',
+  warn    : 'var(--warn)',
+  success : 'var(--success)',
+  info    : 'var(--info)',
+  txHigh  : 'var(--tx-high)',
+  txMid   : 'var(--tx-mid)',
+  txLow   : 'var(--tx-low)',
+  card    : 'var(--bg-card)',
+  inset   : 'var(--bg-inset)',
+  bdDef   : 'var(--bd-default)',
+  bdHair  : 'var(--bd-hairline)',
+  mono    : 'var(--font-mono)',
+}
+
+interface SubNode { id: string; label: string; status: 'ok'|'warn'|'err'; cx: number; cy: number }
+interface LogLine  { text: string; color: string }
+
+const nodeCol = (s: SubNode['status']) =>
+  s === 'err' ? T.danger : s === 'warn' ? T.warn : T.accent
+
+const DEFAULT_LOGS: LogLine[] = [
+  { text: '[14:02:31.442] OUTSTATION_04 → MASTER :: RESP_DIRECT_OPERATE (Obj 12, Var 1, Index 4)', color: T.accent },
+  { text: '[14:02:31.458] Frame Validation: CRC OK // Seq: 14 // Length: 28 bytes', color: T.txLow },
+  { text: '[14:02:32.001] AI_AGENT :: Analyzing Sub-02 Phase Angle Shift (+0.04 deg)', color: T.warn },
+  { text: '[14:02:33.211] MASTER → ALL_NODES :: CLASS_POLL_0_1_2_3', color: T.txLow },
+  { text: '[14:02:33.225] NODE_01 :: ACK :: Data received successfully', color: T.txLow },
+  { text: '[14:02:33.231] NODE_02 :: ACK :: Data received successfully', color: T.txLow },
+  { text: '[14:02:33.245] NODE_04 :: ALERT :: Breaker trip detected in Sub-02-B4', color: T.danger },
+  { text: '[14:02:33.400] AI_RESPONSE :: Automated protection routine triggered.', color: T.warn },
+  { text: '[14:02:34.002] Logs rotation... syncing with central audit.', color: T.txLow },
+]
+
+function TopologyMap({ nodes, selected, onSelect }: {
+  nodes: SubNode[]; selected: string; onSelect: (id: string) => void
+}) {
+  const busY1 = 70, busY2 = 170
+  const cols = [86, 260, 434]
+
+  return (
+    <div className="relative w-full" style={{ height: 270 }}>
+      <div aria-hidden="true" className="absolute inset-0 pointer-events-none" style={{ borderRadius: 10, backgroundImage: 'radial-gradient(rgba(0,217,180,0.09) 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+      <svg width="100%" height="100%" viewBox="0 0 520 240" className="absolute inset-0" style={{ overflow: 'visible' }}>
+        <line x1={cols[0]} y1={busY1} x2={cols[2]} y2={busY1} stroke="rgba(0,217,180,0.22)" strokeWidth={1.5} />
+        <line x1={cols[0]} y1={busY2} x2={cols[2]} y2={busY2} stroke="rgba(0,217,180,0.13)" strokeWidth={1.5} strokeDasharray="8 6" />
+        {cols.map(x => (
+          <line key={x} x1={x} y1={busY1} x2={x} y2={busY2} stroke="rgba(0,217,180,0.11)" strokeWidth={1} />
+        ))}
+        <line x1={cols[0]} y1={120} x2={cols[2]} y2={120} stroke="rgba(0,217,180,0.07)" strokeWidth={1} strokeDasharray="4 8" />
+        {nodes.map(n => {
+          const c = nodeCol(n.status)
+          const a = n.id === selected
+          return (
+            <g key={n.id} style={{ cursor: 'pointer' }} onClick={() => onSelect(n.id)}>
+              {a && <circle cx={n.cx} cy={n.cy} r={24} fill="none" stroke={c} strokeWidth={1} opacity={0.12} />}
+              <circle cx={n.cx} cy={n.cy} r={a ? 14 : 9} fill="none" stroke={c} strokeWidth={a ? 1.5 : 1} opacity={a ? 0.65 : 0.38} />
+              {n.status !== 'ok' && <circle cx={n.cx} cy={n.cy} r={8} fill={c} opacity={0.10} />}
+              <circle cx={n.cx} cy={n.cy} r={n.status === 'err' ? 5.5 : 4} fill={n.status === 'ok' ? T.inset : c} stroke={c} strokeWidth={1.5} />
+              <rect x={n.cx - 52} y={n.cy + 18} width={104} height={17} rx={3} fill={a ? `${c}16` : 'rgba(9,18,32,0.80)'} stroke={a ? `${c}40` : 'rgba(30,53,80,0.70)'} strokeWidth={0.8} />
+              <text x={n.cx} y={n.cy + 30} textAnchor="middle" fontSize={7.5} fontFamily="JetBrains Mono, monospace" fontWeight="600" letterSpacing="0.07em" fill={a ? c : T.txLow}>{n.label}</text>
+            </g>
+          )
+        })}
+      </svg>
+      <div className="absolute bottom-0 left-0 right-0 flex justify-between items-center" style={{ padding: '6px 16px', borderTop: `1px solid ${T.bdHair}`, fontFamily: T.mono, fontSize: 9, color: T.txLow }}>
+        <span>MAIN BUSBARS: BUS-A (500KV) // BUS-B (STANDBY)</span>
+        <span>SCADA PROTOCOL: DNP3 / IEC-61850</span>
+      </div>
+    </div>
+  )
+}
+
+function ScadaLogs({ lines }: { lines: LogLine[] }) {
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (ref.current) ref.current.scrollTop = ref.current.scrollHeight
+  }, [lines])
+
+  return (
+    <div ref={ref} className="overflow-y-auto h-full" style={{ fontFamily: T.mono, fontSize: 11, lineHeight: 1.75 }}>
+      {lines.map((l, i) => (
+        <div key={i} style={{ color: l.color, padding: '0 4px', borderRadius: 3 }} className="transition-colors hover:bg-white/[0.02]">{l.text}</div>
+      ))}
+    </div>
+  )
+}
+
+function SummaryCard({ title, value, detail, accent }: { title: string; value: string; detail: string; accent: string }) {
+  return (
+    <div style={{ background: T.card, border: `1px solid ${T.bdDef}`, borderRadius: 20, padding: '24px', boxShadow: 'var(--sh-md)', minHeight: 120, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ fontSize: 11, fontWeight: 600, color: T.txLow, textTransform: 'uppercase', letterSpacing: '0.14em', fontFamily: T.mono }}>{title}</span>
+        <span style={{ width: 8, height: 8, borderRadius: '50%', background: accent, boxShadow: `0 0 8px ${accent}` }} />
+      </div>
+      <div style={{ fontSize: 24, fontWeight: 700, color: T.txHigh, fontFamily: T.mono, lineHeight: 1.1 }}>{value}</div>
+      <div style={{ fontSize: 12, color: T.txMid, lineHeight: 1.5 }}>{detail}</div>
+    </div>
+  )
+}
+
+function ProtectionRow({ label, active, accent }: { label: string; active: boolean; accent: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '12px 14px', borderRadius: 12, background: T.inset, border: `1px solid ${active ? `${accent}30` : T.bdHair}` }}>
+      <span style={{ fontSize: 12, color: T.txMid }}>{label}</span>
+      <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', padding: '3px 8px', borderRadius: 5, fontFamily: T.mono, color: active ? accent : T.txLow, background: active ? `${accent}14` : 'transparent', border: `1px solid ${active ? `${accent}40` : T.bdHair}` }}>
+        {active ? 'ACTIVE' : 'READY'}
+      </span>
+    </div>
+  )
+}
+
+const cardStyle = {
+  background: T.card,
+  border: `1px solid ${T.bdDef}`,
+  borderRadius: 24,
+  boxShadow: 'var(--sh-md)',
+  overflow: 'hidden' as const,
+}
+const cardHeaderStyle = {
+  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+  gap: 12,
+  flexWrap: 'wrap' as const,
+  padding: '24px 24px',
+  borderBottom: `1px solid var(--bd-hairline)`,
+}
+
+export function DashboardPage() {
+  const { liveEvents } = useEventsStore()
+  const hasCritical = liveEvents.some(e => e.severity === 'critical')
+  const hasHigh = liveEvents.some(e => e.severity === 'high')
+  const alert = hasCritical ? 'trip' : hasHigh ? 'warn' : 'ok'
+  const sc = alert === 'trip' ? T.danger : alert === 'warn' ? T.warn : T.accent
+
+  const [sel, setSel] = useState('sub-02')
+
+  const nodes: SubNode[] = useMemo(() => [
+    { id: 'sub-01', label: 'SUBSTATION_01', status: 'ok', cx: 86, cy: 70 },
+    { id: 'sub-02', label: 'SUBSTATION_02', status: alert === 'trip' ? 'err' : alert === 'warn' ? 'warn' : 'ok', cx: 260, cy: 70 },
+    { id: 'sub-03', label: 'SUBSTATION_03', status: 'ok', cx: 434, cy: 70 },
+    { id: 'sub-04', label: 'SUBSTATION_04', status: 'ok', cx: 86, cy: 170 },
+    { id: 'sub-05', label: 'SUBSTATION_05', status: 'ok', cx: 260, cy: 170 },
+    { id: 'sub-06', label: 'SUBSTATION_06', status: 'ok', cx: 434, cy: 170 },
+    { id: 'brk', label: 'BREAKER_X_ERR', status: 'err', cx: 160, cy: 120 },
+    { id: 'trf', label: 'TRANSFORMER_SEC', status: 'ok', cx: 358, cy: 120 },
+  ], [alert])
+
+  const okCount = nodes.filter(n => n.status === 'ok').length
+  const selNode = nodes.find(n => n.id === sel)
+
+  const [logLines, setLogLines] = useState<LogLine[]>(DEFAULT_LOGS)
+  const prevLen = useRef(0)
+  useEffect(() => {
+    if (!liveEvents.length || liveEvents.length === prevLen.current) return
+    prevLen.current = liveEvents.length
+    const ev = liveEvents[0]
+    const ts = new Date(ev.timestamp).toLocaleTimeString('en-GB', { hour12: false })
+    const col = ev.severity === 'critical' ? T.danger : ev.severity === 'high' ? T.warn : ev.severity === 'medium' ? T.accent : T.txLow
+    setLogLines(p => [...p, { text: `[${ts}.000] ${ev.hostname ?? 'SYSTEM'} :: ${ev.description}`, color: col }].slice(-40))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveEvents.length])
+
+  const aiText = alert === 'trip'
+    ? 'Sub-02 phase angle shift matches MITRE T0813 (DNP3 Command Poisoning). Shadow copy deletion preceded grid frequency deviation. Breaker isolation triggered autonomously.'
+    : alert === 'warn'
+      ? 'Phase frequency deviation on Sub-02. Spear-phishing on WS-07 preceded remote SCADA access, causing transient DNP3 command validation warnings.'
+      : 'System frequency, impedance, and telemetry are nominal. Bus connection checks confirm optimal line load alignment. Minimal harmonic distortion in the DNP3 frame layer.'
+
+  return (
+    <PageContainer>
+      <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className="relative overflow-hidden rounded-[24px] border px-6 py-5 sm:px-8" style={{ background: `linear-gradient(135deg, ${sc}10 0%, rgba(9,18,32,0.95) 60%, rgba(9,18,32,0.98) 100%)`, border: `1px solid ${sc}2A`, boxShadow: 'var(--sh-md)' }}>
+        <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: `linear-gradient(90deg, ${sc}18 0%, transparent 50%)` }} />
+        <div className="relative flex flex-wrap items-center justify-between gap-4">
+          <div className="flex min-w-0 flex-wrap items-center gap-3">
+            <span className="status-dot" style={{ background: sc, boxShadow: `0 0 10px ${sc}` }} />
+            <div className="min-w-0">
+              <p className="truncate" style={{ fontSize: 12, fontWeight: 700, color: sc, fontFamily: T.mono, letterSpacing: '0.16em', textTransform: 'uppercase' }}>
+                {alert === 'trip' ? 'Grid risk detected — breaker isolation in progress' : alert === 'warn' ? 'Transient drift detected on substation mesh' : 'Operations aligned — no active disruption'}
+              </p>
+              <p style={{ fontSize: 12, color: T.txMid, marginTop: 2 }}>Threat posture stabilized across the enterprise mesh.</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span style={{ padding: '6px 10px', borderRadius: 999, background: 'rgba(255,255,255,0.05)', border: `1px solid ${T.bdHair}`, color: T.txLow, fontSize: 11, fontFamily: T.mono }}>SYSTEM HEALTH 99.78%</span>
+            <span style={{ padding: '6px 10px', borderRadius: 999, background: 'rgba(255,255,255,0.05)', border: `1px solid ${T.bdHair}`, color: T.txLow, fontSize: 11, fontFamily: T.mono }}>THREAT LEVEL {alert === 'trip' ? 'CRITICAL' : alert === 'warn' ? 'HIGH' : 'LOW'}</span>
+          </div>
+        </div>
+      </motion.div>
+
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+        <SummaryCard title="Active Incidents" value="09" detail="3 require immediate analyst attention" accent={T.danger} />
+        <SummaryCard title="Analyst Confidence" value="97%" detail="Narrative confidence above baseline" accent={T.accent} />
+        <SummaryCard title="Threat Propagation" value="14" detail="Nodes linked to the current campaign" accent={T.warn} />
+        <SummaryCard title="System Integrity" value="99.78%" detail="All core services operating normally" accent={T.success} />
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-12">
+        <div className="flex flex-col gap-6 xl:col-span-8">
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.04 }} style={cardStyle}>
+            <div style={cardHeaderStyle}>
+              <div>
+                <p style={{ fontSize: 10, fontFamily: T.mono, textTransform: 'uppercase', letterSpacing: '0.18em', color: T.txLow, marginBottom: 4 }}>Attack Investigation</p>
+                <h2 style={{ fontSize: 18, fontWeight: 600, color: T.txHigh, lineHeight: 1.2 }}>Attack path traced across the substation mesh</h2>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <p style={{ fontSize: 10, fontFamily: T.mono, textTransform: 'uppercase', letterSpacing: '0.14em', color: T.txLow, marginBottom: 4 }}>Aligned Nodes</p>
+                <p style={{ fontSize: 15, fontWeight: 700, fontFamily: T.mono, color: T.accent }}>{okCount} / {nodes.length}</p>
+              </div>
+            </div>
+            <div className="p-4 sm:p-5 lg:p-6">
+              <TopologyMap nodes={nodes} selected={sel} onSelect={setSel} />
+            </div>
+          </motion.div>
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.08 }} style={cardStyle}>
+              <div style={cardHeaderStyle}>
+                <div>
+                  <p style={{ fontSize: 10, fontFamily: T.mono, textTransform: 'uppercase', letterSpacing: '0.18em', color: T.txLow, marginBottom: 4 }}>AI Investigation Summary</p>
+                  <h2 style={{ fontSize: 16, fontWeight: 600, color: T.txHigh, lineHeight: 1.2 }}>Machine-generated narrative</h2>
+                </div>
+              </div>
+              <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ borderRadius: 12, padding: '12px 14px', background: T.inset, border: `1px solid ${T.bdHair}` }}>
+                  <p style={{ fontSize: 12, color: T.txMid, lineHeight: 1.65 }}>{aiText}</p>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <div style={{ borderRadius: 12, padding: '12px 14px', background: 'rgba(255,255,255,0.03)', border: `1px solid ${T.bdHair}` }}>
+                    <div style={{ fontSize: 10, fontFamily: T.mono, textTransform: 'uppercase', letterSpacing: '0.14em', color: T.txLow }}>Likelihood</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: T.txHigh, fontFamily: T.mono, marginTop: 4 }}>High</div>
+                  </div>
+                  <div style={{ borderRadius: 12, padding: '12px 14px', background: 'rgba(255,255,255,0.03)', border: `1px solid ${T.bdHair}` }}>
+                    <div style={{ fontSize: 10, fontFamily: T.mono, textTransform: 'uppercase', letterSpacing: '0.14em', color: T.txLow }}>Origin</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: T.txHigh, fontFamily: T.mono, marginTop: 4 }}>Internal</div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.12 }} style={cardStyle}>
+              <div style={cardHeaderStyle}>
+                <div>
+                  <p style={{ fontSize: 10, fontFamily: T.mono, textTransform: 'uppercase', letterSpacing: '0.18em', color: T.txLow, marginBottom: 4 }}>Threat Timeline</p>
+                  <h2 style={{ fontSize: 16, fontWeight: 600, color: T.txHigh, lineHeight: 1.2 }}>Live event progression</h2>
+                </div>
+              </div>
+              <div style={{ padding: '24px', height: 220 }}>
+                <ScadaLogs lines={logLines.slice(-10)} />
+              </div>
+            </motion.div>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-6 xl:col-span-4">
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }} style={cardStyle}>
+            <div style={cardHeaderStyle}>
+              <div>
+                <p style={{ fontSize: 10, fontFamily: T.mono, textTransform: 'uppercase', letterSpacing: '0.18em', color: T.txLow, marginBottom: 4 }}>Active Incidents</p>
+                <h2 style={{ fontSize: 16, fontWeight: 600, color: T.txHigh, lineHeight: 1.2 }}>Priority operations</h2>
+              </div>
+            </div>
+            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {[
+                { title: 'Sub-02 breaker drift', detail: 'Rapid escalation on busline B', state: 'Critical' },
+                { title: 'Credential replay', detail: 'SCADA admin token replay attempt', state: 'High' },
+                { title: 'DNP3 validation warning', detail: 'Protocol anomaly above working threshold', state: 'Moderate' },
+              ].map((item, index) => (
+                <div key={item.title} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '10px 0', borderBottom: index < 2 ? `1px solid ${T.bdHair}` : 'none' }}>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: T.txHigh }}>{item.title}</div>
+                    <div style={{ fontSize: 11, color: T.txMid, marginTop: 2 }}>{item.detail}</div>
+                  </div>
+                  <span style={{ fontSize: 10, color: index === 0 ? T.danger : index === 1 ? T.warn : T.accent, fontFamily: T.mono, whiteSpace: 'nowrap' }}>{item.state}</span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.14 }} style={cardStyle}>
+            <div style={cardHeaderStyle}>
+              <div>
+                <p style={{ fontSize: 10, fontFamily: T.mono, textTransform: 'uppercase', letterSpacing: '0.18em', color: T.txLow, marginBottom: 4 }}>Recommended Actions</p>
+                <h2 style={{ fontSize: 16, fontWeight: 600, color: T.txHigh, lineHeight: 1.2 }}>Countermeasures</h2>
+              </div>
+            </div>
+            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <ProtectionRow label="Isolate Breaker #4 (Sub-02)" active={alert === 'trip'} accent={T.danger} />
+              <ProtectionRow label="Disable Compromised SCADA User" active={alert === 'trip' || alert === 'warn'} accent={T.warn} />
+              <ProtectionRow label="DNP3 Session Encryption Force" active={true} accent={T.accent} />
+              <button className="transition-all duration-150 hover:brightness-110 active:scale-[0.98]" style={{ width: '100%', padding: '12px 0', borderRadius: 12, background: T.accent, color: '#020912', fontSize: 12, fontWeight: 700, fontFamily: T.mono, textTransform: 'uppercase', letterSpacing: '0.08em', border: 'none', cursor: 'pointer', boxShadow: '0 4px 20px rgba(0,229,255,0.24)' }}>Execute Countermeasures [6]</button>
+            </div>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.18 }} style={cardStyle}>
+            <div style={cardHeaderStyle}>
+              <div>
+                <p style={{ fontSize: 10, fontFamily: T.mono, textTransform: 'uppercase', letterSpacing: '0.18em', color: T.txLow, marginBottom: 4 }}>Threat Feed</p>
+                <h2 style={{ fontSize: 16, fontWeight: 600, color: T.txHigh, lineHeight: 1.2 }}>Recent activity</h2>
+              </div>
+            </div>
+            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {['Credential spraying', 'Protocol fuzzing', 'Unexpected subnet flow'].map((item) => (
+                <div key={item} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '8px 0', borderBottom: `1px solid ${T.bdHair}` }}>
+                  <span style={{ fontSize: 12, color: T.txMid }}>{item}</span>
+                  <span style={{ fontSize: 10, color: T.accent, fontFamily: T.mono }}>+2</span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.22 }} style={cardStyle}>
+            <div style={cardHeaderStyle}>
+              <div>
+                <p style={{ fontSize: 10, fontFamily: T.mono, textTransform: 'uppercase', letterSpacing: '0.18em', color: T.txLow, marginBottom: 4 }}>MITRE Mapping</p>
+                <h2 style={{ fontSize: 16, fontWeight: 600, color: T.txHigh, lineHeight: 1.2 }}>Observed techniques</h2>
+              </div>
+            </div>
+            <div style={{ padding: '24px', display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {['T0813', 'T1204', 'T1078', 'T1548'].map(tag => (
+                <span key={tag} style={{ padding: '8px 10px', borderRadius: 999, background: 'rgba(255,255,255,0.04)', border: `1px solid ${T.bdHair}`, color: T.txMid, fontSize: 11, fontFamily: T.mono }}>{tag}</span>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-12">
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.16 }} style={cardStyle} className="xl:col-span-5">
+          <div style={cardHeaderStyle}>
+            <div>
+              <p style={{ fontSize: 10, fontFamily: T.mono, textTransform: 'uppercase', letterSpacing: '0.18em', color: T.txLow, marginBottom: 4 }}>Threat Analytics</p>
+              <h2 style={{ fontSize: 16, fontWeight: 600, color: T.txHigh, lineHeight: 1.2 }}>Spread and containment</h2>
+            </div>
+          </div>
+          <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {[
+              { label: 'Containment', value: '83%', accent: T.accent },
+              { label: 'Propagation', value: '41%', accent: T.warn },
+              { label: 'Isolation', value: '76%', accent: T.success },
+            ].map(item => (
+              <div key={item.label}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <span style={{ fontSize: 12, color: T.txMid }}>{item.label}</span>
+                  <span style={{ fontSize: 12, color: T.txHigh, fontFamily: T.mono }}>{item.value}</span>
+                </div>
+                <div style={{ height: 8, borderRadius: 999, background: 'rgba(255,255,255,0.05)', overflow: 'hidden' }}>
+                  <div style={{ width: item.value, height: '100%', borderRadius: 999, background: item.accent, boxShadow: `0 0 12px ${item.accent}` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.2 }} style={cardStyle} className="xl:col-span-3">
+          <div style={cardHeaderStyle}>
+            <div>
+              <p style={{ fontSize: 10, fontFamily: T.mono, textTransform: 'uppercase', letterSpacing: '0.18em', color: T.txLow, marginBottom: 4 }}>Risk Trends</p>
+              <h2 style={{ fontSize: 16, fontWeight: 600, color: T.txHigh, lineHeight: 1.2 }}>Weekly risk score</h2>
+            </div>
+          </div>
+          <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map((day, index) => (
+              <div key={day} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                <span style={{ fontSize: 12, color: T.txMid }}>{day}</span>
+                <div style={{ flex: 1, height: 8, borderRadius: 999, background: 'rgba(255,255,255,0.05)', overflow: 'hidden' }}>
+                  <div style={{ width: `${64 + index * 7}%`, height: '100%', borderRadius: 999, background: index < 2 ? T.danger : T.accent }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.24 }} style={cardStyle} className="xl:col-span-4">
+          <div style={cardHeaderStyle}>
+            <div>
+              <p style={{ fontSize: 10, fontFamily: T.mono, textTransform: 'uppercase', letterSpacing: '0.18em', color: T.txLow, marginBottom: 4 }}>Response History</p>
+              <h2 style={{ fontSize: 16, fontWeight: 600, color: T.txHigh, lineHeight: 1.2 }}>Recent playbook runs</h2>
+            </div>
+          </div>
+          <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {['Isolated compromised node', 'Reset token policy', 'Activated watchlist'].map((item) => (
+              <div key={item} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '8px 0', borderBottom: `1px solid ${T.bdHair}` }}>
+                <span style={{ fontSize: 12, color: T.txMid }}>{item}</span>
+                <span style={{ fontSize: 10, color: T.success, fontFamily: T.mono }}>Complete</span>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.28 }} style={cardStyle} className="xl:col-span-4">
+          <div style={cardHeaderStyle}>
+            <div>
+              <p style={{ fontSize: 10, fontFamily: T.mono, textTransform: 'uppercase', letterSpacing: '0.18em', color: T.txLow, marginBottom: 4 }}>Organization Health</p>
+              <h2 style={{ fontSize: 16, fontWeight: 600, color: T.txHigh, lineHeight: 1.2 }}>Analyst readiness</h2>
+            </div>
+          </div>
+          <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 12, color: T.txMid }}>Coverage</span>
+              <span style={{ fontSize: 13, color: T.txHigh, fontFamily: T.mono }}>92%</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 12, color: T.txMid }}>Escalation SLA</span>
+              <span style={{ fontSize: 13, color: T.txHigh, fontFamily: T.mono }}>4 min</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 12, color: T.txMid }}>MTTR</span>
+              <span style={{ fontSize: 13, color: T.txHigh, fontFamily: T.mono }}>8 min</span>
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.32 }} style={cardStyle} className="xl:col-span-8">
+          <div style={cardHeaderStyle}>
+            <div>
+              <p style={{ fontSize: 10, fontFamily: T.mono, textTransform: 'uppercase', letterSpacing: '0.18em', color: T.txLow, marginBottom: 4 }}>Network Statistics</p>
+              <h2 style={{ fontSize: 16, fontWeight: 600, color: T.txHigh, lineHeight: 1.2 }}>Infrastructure throughput</h2>
+            </div>
+          </div>
+          <div style={{ padding: '24px', display: 'grid', gap: 12, gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
+            {[
+              { label: 'Ingress', value: '4.8 Gbps' },
+              { label: 'Egress', value: '2.6 Gbps' },
+              { label: 'Packet loss', value: '0.001%' },
+            ].map(item => (
+              <div key={item.label} style={{ borderRadius: 12, padding: '12px 14px', background: 'rgba(255,255,255,0.03)', border: `1px solid ${T.bdHair}` }}>
+                <div style={{ fontSize: 10, fontFamily: T.mono, textTransform: 'uppercase', letterSpacing: '0.14em', color: T.txLow }}>{item.label}</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: T.txHigh, fontFamily: T.mono, marginTop: 4 }}>{item.value}</div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      </div>
+    </PageContainer>
+  )
+}

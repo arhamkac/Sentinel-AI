@@ -2,7 +2,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, Network, ShieldCheck, ClipboardList, Settings,
-  ChevronLeft, ChevronRight, Hexagon, Shield,
+  ChevronLeft, ChevronRight, Hexagon, Shield, Activity,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useUIStore } from '@/stores/ui.store'
@@ -13,6 +13,7 @@ const NAV = [
   { to: '/incidents',        icon: Network,         label: 'Incidents'      },
   { to: '/attack-graph',     icon: ShieldCheck,     label: 'Attack Graph'   },
   { to: '/ai-investigation', icon: ClipboardList,   label: 'Investigation'  },
+  { to: '/simulator',        icon: Activity,        label: 'Simulator'      },
   { to: '/settings',         icon: Settings,        label: 'Settings'       },
 ]
 

@@ -15,11 +15,11 @@ interface SeverityBadgeProps {
   className?: string
 }
 
-export function SeverityBadge({ severity, dot, className }: SeverityBadgeProps) {
+export function SeverityBadge({ severity = 'info', dot, className }: SeverityBadgeProps) {
   const variant = severityVariantMap[severity] ?? 'info'
   return (
     <Badge variant={variant} dot={dot} className={className}>
-      {severity.charAt(0).toUpperCase() + severity.slice(1)}
+      {(severity || 'info').charAt(0).toUpperCase() + (severity || 'info').slice(1)}
     </Badge>
   )
 }

@@ -21,6 +21,11 @@ class ScenarioResponse(BaseModel):
     id: str
     name: str
     description: str
+    attack_type: str
+    severity: str
+    estimated_duration: str
+    techniques: List[str]
+    target_profile: str
 
 
 class RunResponse(BaseModel):
@@ -44,12 +49,22 @@ async def get_scenarios(current_user: User = Depends(get_current_active_user)):
         {
             "id": "ransomware",
             "name": "Ransomware Scenario",
-            "description": "Spear-phishing macro execution -> local PowerShell download -> host credential dump -> lateral movement to file server -> encryption of files."
+            "description": "Spear-phishing macro execution -> local PowerShell download -> host credential dump -> lateral movement to file server -> encryption of files.",
+            "attack_type": "Ransomware",
+            "severity": "critical",
+            "estimated_duration": "~3 minutes",
+            "techniques": ["T1566", "T1059", "T1003", "T1021", "T1486"],
+            "target_profile": "Corporate Windows Environment"
         },
         {
             "id": "ot_sabotage",
             "name": "OT Sabotage Scenario",
-            "description": "Remote login on IT workstation -> remote control execution accessing SCADA console -> invalid DNP3 code injections -> breaker trip."
+            "description": "Remote login on IT workstation -> remote control execution accessing SCADA console -> invalid DNP3 code injections -> breaker trip.",
+            "attack_type": "OT Sabotage",
+            "severity": "high",
+            "estimated_duration": "~2 minutes",
+            "techniques": ["T1021", "T0813", "T0855", "T0814"],
+            "target_profile": "Substation 02 / Grid Network"
         }
     ]
 

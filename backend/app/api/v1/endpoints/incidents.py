@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, BackgroundTasks
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional, List
@@ -304,4 +304,197 @@ async def get_attack_graph(
         nodes=nodes,
         edges=edges,
         generated_at=datetime.now(timezone.utc).isoformat()
+    )
+
+
+# ─── SOAR Remediation (Task A8) ──────────────────────────────────────────────
+
+VALID_ACTIONS = {"isolate_endpoint", "block_ip", "revoke_credentials", "force_password_reset", "quarantine_file"}
+
+
+class RemediateRequest(BaseModel):
+    action: str
+    target: str
+    reason: Optional[str] = None
+
+
+class RemediateResponse(BaseModel):
+    incident_id: str
+    action: str
+    target: str
+    executed_at: str
+    status: str
+    message: str
+
+
+@router.post("/{id}/remediate", response_model=RemediateResponse)
+async def remediate_incident(
+    id: str,
+    payload: RemediateRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Execute a SOAR containment action against an incident."""
+    if payload.action not in VALID_ACTIONS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid action '{payload.action}'. Valid actions: {sorted(VALID_ACTIONS)}"
+        )
+
+    result = await db.execute(
+        select(Incident).where(
+            Incident.id == id,
+            Incident.organization_id == current_user.organization_id
+        )
+    )
+    inc = result.scalar_one_or_none()
+    if not inc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Incident not found")
+
+    rec = {
+        "action": payload.action,
+        "target": payload.target,
+        "reason": payload.reason,
+        "executed_by": current_user.email,
+        "executed_at": datetime.now(timezone.utc).isoformat(),
+        "status": "executed",
+    }
+    existing = list(inc.recommendations or [])
+    existing.append(rec)
+    inc.recommendations = existing
+    if inc.status == "open":
+        inc.status = "investigating"
+    await db.commit()
+
+    return RemediateResponse(
+        incident_id=id,
+        action=payload.action,
+        target=payload.target,
+        executed_at=rec["executed_at"],
+        status="executed",
+        message=f"Action '{payload.action}' executed against '{payload.target}' successfully."
+    )
+
+
+# ─── AI Narrative Generation (Task A7) ───────────────────────────────────────
+
+class NarrativeResponse(BaseModel):
+    incident_id: str
+    narrative: str
+    executive_summary: Optional[str] = None
+    generated_at: str
+
+
+async def _generate_narrative_task(incident_id: str, org_id: str) -> None:
+    """Background task: call AI agents and persist results."""
+    from app.db.session import AsyncSessionLocal
+    from app.services.ai.service import run_attribution_agent, run_prediction_agent, run_soar_agent
+
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(
+            select(Incident).where(Incident.id == incident_id, Incident.organization_id == org_id)
+        )
+        inc = result.scalar_one_or_none()
+        if not inc:
+            return
+
+        context = (
+            f"Title: {inc.title}\nDescription: {inc.description}\n"
+            f"Severity: {inc.severity}\nAffected Assets: {inc.affected_assets}\n"
+            f"Affected Users: {inc.affected_users}\nMITRE Techniques: {inc.mitre_techniques}\n"
+            f"Event Count: {inc.event_count}"
+        )
+
+        attribution = await run_attribution_agent(context)
+        predictions = await run_prediction_agent(context)
+        soar_actions = await run_soar_agent(context)
+
+        inc.threat_narrative = attribution.get("threat_narrative", inc.threat_narrative)
+        inc.executive_summary = attribution.get("executive_summary", inc.executive_summary)
+        inc.predicted_next_steps = predictions
+        if soar_actions:
+            inc.recommendations = soar_actions
+        await db.commit()
+
+
+@router.post("/{id}/narrative", response_model=NarrativeResponse)
+async def generate_narrative(
+    id: str,
+    background_tasks: BackgroundTasks,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Trigger AI narrative generation for an incident (runs in background)."""
+    result = await db.execute(
+        select(Incident).where(
+            Incident.id == id,
+            Incident.organization_id == current_user.organization_id
+        )
+    )
+    inc = result.scalar_one_or_none()
+    if not inc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Incident not found")
+
+    background_tasks.add_task(_generate_narrative_task, id, current_user.organization_id)
+
+    return NarrativeResponse(
+        incident_id=id,
+        narrative=inc.threat_narrative or "AI analysis triggered — refresh in a few seconds.",
+        executive_summary=inc.executive_summary,
+        generated_at=datetime.now(timezone.utc).isoformat()
+    )
+
+
+# ─── Report Generation (Task A9) ─────────────────────────────────────────────
+
+class ReportResponse(BaseModel):
+    incident_id: str
+    title: str
+    severity: str
+    status: str
+    executive_summary: Optional[str]
+    threat_narrative: Optional[str]
+    mitre_techniques: Optional[list]
+    affected_assets: Optional[list]
+    affected_users: Optional[list]
+    recommendations: Optional[list]
+    predicted_next_steps: Optional[list]
+    event_count: int
+    generated_at: str
+    created_at: str
+
+
+@router.get("/{id}/report", response_model=ReportResponse)
+@router.post("/{id}/report", response_model=ReportResponse)
+async def get_or_generate_report(
+    id: str,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Return a structured incident report payload for display or export."""
+    result = await db.execute(
+        select(Incident).where(
+            Incident.id == id,
+            Incident.organization_id == current_user.organization_id
+        )
+    )
+    inc = result.scalar_one_or_none()
+    if not inc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Incident not found")
+
+    return ReportResponse(
+        incident_id=inc.id,
+        title=inc.title,
+        severity=inc.severity,
+        status=inc.status,
+        executive_summary=inc.executive_summary,
+        threat_narrative=inc.threat_narrative,
+        mitre_techniques=inc.mitre_techniques,
+        affected_assets=inc.affected_assets,
+        affected_users=inc.affected_users,
+        recommendations=inc.recommendations,
+        predicted_next_steps=inc.predicted_next_steps,
+        event_count=inc.event_count,
+        generated_at=datetime.now(timezone.utc).isoformat(),
+        created_at=inc.created_at.isoformat()
     )

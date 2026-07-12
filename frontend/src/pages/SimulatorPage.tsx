@@ -9,6 +9,7 @@ import { PageContainer } from '@/components/layout'
 import { SeverityBadge } from '@/components/ui'
 import { simulatorService } from '@/services/simulator.service'
 import type { SimulationScenario, SimulationRun } from '@/types'
+import { TwinControls } from '@/features/simulator/components/TwinControls'
 
 const ATTACK_ICONS: Record<string, React.ElementType> = {
   Ransomware: Skull,
@@ -179,7 +180,7 @@ export function SimulatorPage() {
                             <Clock className="w-3 h-3" />{scenario.estimated_duration}
                           </span>
                           <span className="flex items-center gap-1.5">
-                            <Zap className="w-3 h-3" />{scenario.techniques.length} MITRE techniques
+                            <Zap className="w-3 h-3" />{(scenario.techniques || []).length} MITRE techniques
                           </span>
                           <span className="flex items-center gap-1.5">
                             <Globe className="w-3 h-3" />{scenario.target_profile}
@@ -188,7 +189,7 @@ export function SimulatorPage() {
 
                         {/* MITRE technique tags */}
                         <div className="flex flex-wrap gap-1.5 pt-1">
-                          {scenario.techniques.map(t => (
+                          {(scenario.techniques || []).map(t => (
                             <span
                               key={t}
                               className="text-[9px] font-mono px-1.5 py-0.5 rounded border"
@@ -369,6 +370,11 @@ export function SimulatorPage() {
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Digital Twin Controls */}
+          <div className="rounded-xl bg-surface border border-border overflow-hidden p-4" style={{ borderTop: '2px solid var(--color-accent)' }}>
+            <TwinControls onScenarioStart={run => setActiveRun(run)} />
+          </div>
 
           {/* Previous runs */}
           <div className="rounded-xl bg-surface border border-border overflow-hidden" style={{ borderTop: '1px solid rgba(142,221,190,0.2)' }}>
