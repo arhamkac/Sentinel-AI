@@ -91,10 +91,7 @@ export function SOARPlaybook({ incidentId, affectedAssets = [], affectedUsers = 
   const [confirming, setConfirming] = useState<PlaybookAction | null>(null)
   const [executed, setExecuted]     = useState<Set<string>>(new Set())
 
-  const actions = buildActions(
-    affectedAssets.map(a => typeof a === 'object' ? ((a as Record<string, unknown>).id as string) ?? String(a) : a),
-    affectedUsers.map(u => typeof u === 'object' ? ((u as Record<string, unknown>).username as string) ?? String(u) : u),
-  )
+  const actions = buildActions(affectedAssets, affectedUsers)
 
   const { mutate: executeAction, isPending } = useMutation({
     mutationFn: (act: PlaybookAction) =>

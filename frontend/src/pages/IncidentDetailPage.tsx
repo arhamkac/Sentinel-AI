@@ -13,7 +13,7 @@ import {
 } from '@/components/ui'
 import { incidentsService } from '@/services/incidents.service'
 import { formatDate, formatRelativeTime } from '@/lib/utils'
-import type { Incident } from '@/types'
+import type { Incident, MitreTechniqueRef } from '@/types'
 import { SOARPlaybook } from '@/features/incidents/components/SOARPlaybook'
 
 const MOCK_INCIDENT: Incident = {
@@ -290,9 +290,8 @@ export function IncidentDetailPage() {
             <CardContent>
               <div className="flex flex-col gap-3">
                 {(display.mitre_techniques || []).map(t => {
-                  const rec = t as unknown as Record<string, unknown>
-                  const id = (rec.technique_id as string) || (rec.id as string) || 'Txxx'
-                  const name = (rec.technique_name as string) || (rec.name as string) || 'Unknown Technique'
+                  const id = t.technique_id || (t as MitreTechniqueRef & { id?: string }).id || 'Txxx'
+                  const name = t.technique_name || (t as MitreTechniqueRef & { name?: string }).name || 'Unknown Technique'
                   const confidence = typeof t.confidence === 'number' ? t.confidence : 1.0
                   const tactic = t.tactic || 'General'
 
