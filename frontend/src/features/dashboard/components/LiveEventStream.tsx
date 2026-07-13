@@ -69,7 +69,7 @@ export function LiveEventStream() {
     prevLenRef.current = liveEvents.length
     const ev = liveEvents[0]
     const entry: LogEntry = {
-      id          : (ev as any).id ?? `live-${Date.now()}`,
+      id          : (ev as unknown as Record<string, unknown>).id as string ?? `live-${Date.now()}`,
       timestamp   : ev.timestamp ?? new Date().toISOString(),
       type        : ev.event_type ?? 'endpoint',
       severity    : ev.severity ?? 'low',

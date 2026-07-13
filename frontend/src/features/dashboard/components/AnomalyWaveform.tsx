@@ -62,8 +62,10 @@ export function AnomalyWaveform({
   const scoreRef     = useRef(riskScore)
   const rateRef      = useRef(eventRate)
 
-  scoreRef.current = riskScore
-  rateRef.current  = eventRate
+  useEffect(() => {
+    scoreRef.current = riskScore
+    rateRef.current  = eventRate
+  }, [riskScore, eventRate])
 
   useEffect(() => {
     const animate = () => {

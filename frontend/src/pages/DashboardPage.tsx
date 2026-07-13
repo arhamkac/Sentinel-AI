@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import {
-  Terminal, Globe, Activity, Zap,
+  Terminal, Globe, Activity,
   TrendingUp, TrendingDown, Minus,
   Cpu, ShieldOff, Eye,
 } from 'lucide-react'
@@ -29,22 +29,8 @@ const T = {
 
 /* ─── types ───────────────────────────────────────────────────── */
 interface SubNode { id: string; label: string; status: 'ok'|'warn'|'err'; cx: number; cy: number }
-interface LogLine  { text: string; color: string }
-
 const nodeCol = (s: SubNode['status']) =>
   s === 'err' ? T.danger : s === 'warn' ? T.warn : T.accent
-
-const DEFAULT_LOGS: LogLine[] = [
-  { text: '[14:02:31.442] OUTSTATION_04 → MASTER :: RESP_DIRECT_OPERATE (Obj 12, Var 1, Index 4)', color: T.accent },
-  { text: '[14:02:31.458] Frame Validation: CRC OK // Seq: 14 // Length: 28 bytes',                  color: T.txLow  },
-  { text: '[14:02:32.001] AI_AGENT :: Analyzing Sub-02 Phase Angle Shift (+0.04 deg)',               color: T.warn   },
-  { text: '[14:02:33.211] MASTER → ALL_NODES :: CLASS_POLL_0_1_2_3',                                 color: T.txLow  },
-  { text: '[14:02:33.225] NODE_01 :: ACK :: Data received successfully',                             color: T.txLow  },
-  { text: '[14:02:33.231] NODE_02 :: ACK :: Data received successfully',                             color: T.txLow  },
-  { text: '[14:02:33.245] NODE_04 :: ALERT :: Breaker trip detected in Sub-02-B4',                  color: T.danger },
-  { text: '[14:02:33.400] AI_RESPONSE :: Automated protection routine triggered.',                   color: T.warn   },
-  { text: '[14:02:34.002] Logs rotation... syncing with central audit.',                             color: T.txLow  },
-]
 
 /* ─── TopologyMap ─────────────────────────────────────────────── */
 function TopologyMap({ nodes, selected, onSelect }: {
@@ -134,20 +120,6 @@ function TopologyMap({ nodes, selected, onSelect }: {
         <span>MAIN BUSBARS: BUS-A (500KV) // BUS-B (STANDBY)</span>
         <span>SCADA PROTOCOL: DNP3 / IEC-61850</span>
       </div>
-    </div>
-  )
-}
-
-/* ─── ScadaLogs ───────────────────────────────────────────────── */
-function ScadaLogs({ lines }: { lines: LogLine[] }) {
-  const ref = useRef<HTMLDivElement>(null)
-  useEffect(() => { if (ref.current) ref.current.scrollTop = ref.current.scrollHeight }, [lines])
-  return (
-    <div ref={ref} className="overflow-y-auto h-full" style={{ fontFamily: T.mono, fontSize: 11, lineHeight: 1.75 }}>
-      {lines.map((l, i) => (
-        <div key={i} style={{ color: l.color, padding: '0 4px', borderRadius: 3 }}
-          className="transition-colors hover:bg-white/[0.02]">{l.text}</div>
-      ))}
     </div>
   )
 }
@@ -327,18 +299,6 @@ export function DashboardPage() {
 
   const okCount = nodes.filter(n => n.status === 'ok').length
   const selNode = nodes.find(n => n.id === sel)
-
-  const [logLines, setLogLines] = useState<LogLine[]>(DEFAULT_LOGS)
-  const prevLen = useRef(0)
-  useEffect(() => {
-    if (!liveEvents.length || liveEvents.length === prevLen.current) return
-    prevLen.current = liveEvents.length
-    const ev = liveEvents[0]
-    const ts = new Date(ev.timestamp).toLocaleTimeString('en-GB', { hour12: false })
-    const col = ev.severity==='critical'?T.danger: ev.severity==='high'?T.warn: ev.severity==='medium'?T.accent: T.txLow
-    setLogLines(p => [...p, { text:`[${ts}.000] ${ev.hostname??'SYSTEM'} :: ${ev.description}`, color:col }].slice(-40))
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [liveEvents.length])
 
   const aiText = alert === 'trip'
     ? 'Sub-02 phase angle shift matches MITRE T0813 (DNP3 Command Poisoning). Shadow copy deletion preceded grid frequency deviation. Breaker isolation triggered autonomously.'

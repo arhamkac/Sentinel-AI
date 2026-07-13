@@ -290,8 +290,9 @@ export function IncidentDetailPage() {
             <CardContent>
               <div className="flex flex-col gap-3">
                 {(display.mitre_techniques || []).map(t => {
-                  const id = (t as any).technique_id || (t as any).id || 'Txxx'
-                  const name = (t as any).technique_name || (t as any).name || 'Unknown Technique'
+                  const rec = t as unknown as Record<string, unknown>
+                  const id = (rec.technique_id as string) || (rec.id as string) || 'Txxx'
+                  const name = (rec.technique_name as string) || (rec.name as string) || 'Unknown Technique'
                   const confidence = typeof t.confidence === 'number' ? t.confidence : 1.0
                   const tactic = t.tactic || 'General'
 

@@ -7,7 +7,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  Shield, WifiOff, UserX, Lock, Trash2,
+  Shield, WifiOff, UserX, Lock,
   AlertTriangle, CheckCircle, X, Loader,
 } from 'lucide-react'
 import { incidentsService } from '@/services/incidents.service'
@@ -28,14 +28,6 @@ interface SOARPlaybookProps {
   incidentId: string
   affectedAssets?: string[]
   affectedUsers?: string[]
-}
-
-const ACTION_ICON: Record<string, React.ElementType> = {
-  isolate_endpoint    : WifiOff,
-  block_ip            : Shield,
-  revoke_credentials  : UserX,
-  force_password_reset: Lock,
-  quarantine_file     : Trash2,
 }
 
 function buildActions(assets: string[], users: string[]): PlaybookAction[] {
@@ -100,8 +92,8 @@ export function SOARPlaybook({ incidentId, affectedAssets = [], affectedUsers = 
   const [executed, setExecuted]     = useState<Set<string>>(new Set())
 
   const actions = buildActions(
-    affectedAssets.map(a => typeof a === 'object' ? (a as any).id ?? String(a) : a),
-    affectedUsers.map(u => typeof u === 'object' ? (u as any).username ?? String(u) : u),
+    affectedAssets.map(a => typeof a === 'object' ? ((a as Record<string, unknown>).id as string) ?? String(a) : a),
+    affectedUsers.map(u => typeof u === 'object' ? ((u as Record<string, unknown>).username as string) ?? String(u) : u),
   )
 
   const { mutate: executeAction, isPending } = useMutation({
