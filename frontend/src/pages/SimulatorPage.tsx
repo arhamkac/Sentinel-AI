@@ -3,7 +3,7 @@ import { useQuery, useMutation } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Activity, Play, CheckCircle, Clock, AlertTriangle, Zap,
-  Shield, Radio, Lock, Skull, Database, Globe, Key, RefreshCw
+  Shield, Radio, Skull, Database, Globe, Key, RefreshCw
 } from 'lucide-react'
 import { PageContainer } from '@/components/layout'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'

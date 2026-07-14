@@ -55,17 +55,16 @@ function FormattedContent({ content }: { content: string }) {
           li: ({ ...props }) => <li className="pl-1" {...props} />,
           strong: ({ ...props }) => <strong className="font-semibold text-[var(--text-primary)]" {...props} />,
           a: ({ ...props }) => <a className="text-[var(--primary)] hover:underline" target="_blank" rel="noopener noreferrer" {...props} />,
-          code: ({ inline, className, children, ...props }: any) => {
-            return inline ? (
-              <code className="bg-[var(--bg-surface)] text-[var(--text-primary)] px-1 py-0.5 rounded text-xs font-mono" {...props}>
+          pre: ({ ...props }) => <pre className="bg-[var(--bg-surface)] p-3 rounded-md overflow-x-auto border border-[var(--border)] my-2" {...props} />,
+          code: ({ node: _, className, children, ...props }) => {
+            const isInline = !className || !className.includes('language-');
+            return (
+              <code 
+                className={`${className || ''} ${isInline ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] px-1 py-0.5 rounded text-xs font-mono' : 'text-xs font-mono text-[var(--text-primary)]'}`} 
+                {...props}
+              >
                 {children}
               </code>
-            ) : (
-              <pre className="bg-[var(--bg-surface)] p-3 rounded-md overflow-x-auto border border-[var(--border)] my-2">
-                <code className="text-xs font-mono text-[var(--text-primary)]" {...props}>
-                  {children}
-                </code>
-              </pre>
             )
           }
         }}

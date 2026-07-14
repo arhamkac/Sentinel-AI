@@ -1,12 +1,10 @@
-import { useMemo } from 'react'
 import {
-  ShieldAlert, Target, Shield, Activity,
+  Shield, Activity,
   TrendingUp, TrendingDown, ArrowRight,
-  Server, Cpu, ActivitySquare
+  ActivitySquare
 } from 'lucide-react'
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  BarChart, Bar, Cell
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts'
 import { PageContainer } from '@/components/layout'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'

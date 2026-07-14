@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { User, Shield, Bell, Key, Radio, Save, CheckCircle2 } from 'lucide-react'
 import { PageContainer } from '@/components/layout'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
+import { Card, CardContent } from '@/components/ui/Card'
 import { useAuthStore } from '@/stores/auth.store'
 
 const TABS = [

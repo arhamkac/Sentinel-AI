@@ -3,8 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   ChevronLeft, Brain, GitBranch, FileText,
-  AlertTriangle, Clock, Monitor, User, ShieldAlert,
-  Server, HardDrive, RefreshCw
+  Monitor, User, Server, RefreshCw
 } from 'lucide-react'
 import { PageContainer } from '@/components/layout'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
