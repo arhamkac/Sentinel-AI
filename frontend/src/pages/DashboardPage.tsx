@@ -1,5 +1,5 @@
 import {
-  Shield, Activity,
+  Shield, Activity, Target, ShieldAlert,
   TrendingUp, TrendingDown, ArrowRight,
   ActivitySquare
 } from 'lucide-react'
