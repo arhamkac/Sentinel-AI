@@ -292,9 +292,9 @@ export function AttackGraphPage() {
                 edges={edges}
                 nodeTypes={nodeTypes}
                 fitView
-                fitViewOptions={{ padding: 0.2 }}
-                minZoom={0.3}
-                maxZoom={2}
+                fitViewOptions={{ padding: 0.2, maxZoom: 1 }}
+                minZoom={0.1}
+                maxZoom={1.5}
                 proOptions={{ hideAttribution: true }}
               >
                 <Background color="var(--border)" gap={24} size={1} />

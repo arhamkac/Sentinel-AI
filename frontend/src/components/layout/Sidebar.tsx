@@ -25,11 +25,13 @@ export function Sidebar() {
 
   return (
     <aside
-      className="flex flex-col h-screen shrink-0"
+      className="flex flex-col h-screen shrink-0 relative z-20"
       style={{
         width: 248,
-        background: 'var(--bg-surface)',
-        borderRight: '1px solid var(--border)',
+        background: 'rgba(15, 23, 42, 0.7)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        borderRight: '1px solid rgba(255, 255, 255, 0.05)',
       }}
     >
       {/* ── Logo ── */}

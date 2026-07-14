@@ -315,6 +315,7 @@ code, pre, kbd, samp { font-family: var(--font-mono); }
   color        : var(--text-primary);
   font-family  : var(--font-sans);
   outline      : none;
+  padding      : 8px 12px;
   transition   : border-color 0.15s;
 }
 .input-frost:focus { border-color: var(--primary-dim); }

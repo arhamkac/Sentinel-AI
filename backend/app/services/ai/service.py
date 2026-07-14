@@ -64,7 +64,10 @@ Return ONLY a valid JSON array with this schema:
 CHAT_SYSTEM = """You are Sentinel AI, an autonomous cyber decision intelligence assistant.
 You help security analysts investigate incidents, understand attack patterns, 
 map techniques to MITRE ATT&CK, and recommend containment actions.
-Be concise, technical, and actionable. Use markdown formatting."""
+
+CRITICAL INSTRUCTION: If the user indicates they do not understand something, are confused, or explicitly ask for an explanation (e.g., "What does this mean?", "Explain it to me"), you MUST break down the technical concepts into simple, beginner-friendly terms. Use clear analogies (like comparing network traffic to physical mail, or firewalls to security guards) and step-by-step logic. Avoid jargon when explaining.
+
+Otherwise, be concise, technical, and actionable. Use markdown formatting."""
 
 
 async def _call_openrouter(
@@ -318,6 +321,16 @@ This maps directly to a standard IT-to-OT compromise pathway (Industrial Control
 Select these actions in the **SOAR Actions** tab to execute them."""
 
     # 5. Ask about "what happened" / "explain" / general incident details
+    if any(k in msg_lower for k in ("what does this mean", "don't understand", "dont understand", "simple")):
+        return """**Simplified Explanation:**
+        
+Imagine your computer network is like a large office building.
+- A **Phishing Email** (T1566) is like a fake delivery driver tricking an employee into opening the back door.
+- **Lateral Movement** (T1021) is when the attacker sneaks from that employee's desk into the secure server room.
+- **Ransomware** (T1486) means they changed the locks on all the filing cabinets and are demanding money for the new keys.
+
+We need to immediately cut the power to the server room (isolate the hosts) to stop them from changing more locks!"""
+
     if any(k in msg_lower for k in ("happen", "explain", "summary", "narrative", "context", "who")):
         title = info.get("title", "CNI Grid Sabotage / Ransomware Chain")
         desc = info.get("description", "Potential malware execution and lateral movement detected.")

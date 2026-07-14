@@ -7,9 +7,14 @@ export function AppShell() {
   useEventStream()
 
   return (
-    <div className="flex h-screen w-full overflow-hidden" style={{ background: 'var(--bg-base)' }}>
+    <div 
+      className="flex h-screen w-full overflow-hidden" 
+      style={{ 
+        background: 'radial-gradient(circle at 50% 0%, #1a2540 0%, #060B16 60%)',
+      }}
+    >
       <Sidebar />
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+      <div className="flex flex-col flex-1 min-w-0 overflow-hidden relative z-10">
         <Topbar />
         <main className="flex-1 overflow-y-auto">
           <Outlet />

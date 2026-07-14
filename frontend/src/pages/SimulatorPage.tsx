@@ -55,9 +55,32 @@ export function SimulatorPage() {
     queryFn: simulatorService.getRuns,
   })
 
+  // Poll for active run status
+  useQuery({
+    queryKey: ['simulator-run', activeRun?.id],
+    queryFn: async () => {
+      if (!activeRun?.id) return null
+      const run = await simulatorService.getRun(activeRun.id)
+      setActiveRun(run)
+      
+      // Update local UI states based on backend events_generated
+      const progress = Math.min(6, Math.floor(run.events_generated / 1.5))
+      setStagesDone(progress)
+      setRiskScore(Math.min(91, 15 + (progress * 14)))
+      
+      return run
+    },
+    enabled: !!activeRun?.id && (activeRun.status === 'running' || activeRun.status === 'pending') && !activeRun.id.startsWith('mock'),
+    refetchInterval: 1000,
+  })
+
   const { mutate: runScenario, isPending } = useMutation({
     mutationFn: (scenarioId: string) => simulatorService.runScenario(scenarioId),
-    onSuccess: run => setActiveRun(run),
+    onSuccess: run => {
+      setActiveRun(run)
+      setRiskScore(15)
+      setStagesDone(0)
+    },
     onError: () => {
       if (selectedScenario) {
         const run: SimulationRun = {

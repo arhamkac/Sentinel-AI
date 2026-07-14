@@ -11,18 +11,21 @@ export function Topbar() {
 
   return (
     <header
-      className="flex items-center shrink-0"
+      className="flex items-center shrink-0 relative z-20"
       style={{
         height: 56,
         padding: '0 32px',
         gap: 16,
-        background: 'var(--bg-base)',
-        borderBottom: '1px solid var(--border)',
+        background: 'rgba(15, 23, 42, 0.7)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
       }}
     >
       {/* ── Search ── */}
       <div
-        className="flex items-center cursor-text"
+        onClick={() => alert("Search functionality coming soon!")}
+        className="flex items-center cursor-pointer transition-colors hover:bg-[var(--bg-inset)] hover:border-[var(--primary-dim)]"
         style={{
           width: 280,
           height: 36,
@@ -81,7 +84,8 @@ export function Topbar() {
 
       {/* ── Notifications ── */}
       <button
-        className="relative flex items-center justify-center rounded-lg cursor-pointer transition-colors"
+        onClick={() => alert(hasCritical ? `You have ${criticalCount} critical alerts!` : "No new alerts")}
+        className="relative flex items-center justify-center rounded-lg cursor-pointer transition-colors hover:opacity-80 active:scale-95"
         style={{
           width: 36, height: 36,
           background: hasCritical ? 'var(--danger-bg)' : 'var(--bg-surface)',
@@ -96,13 +100,13 @@ export function Topbar() {
             style={{
               top: -4, right: -4,
               minWidth: 18, height: 18,
-              padding: '0 5px',
               background: 'var(--danger)',
-              fontSize: 10, fontWeight: 600,
-              color: '#fff',
+              color: 'var(--bg-base)',
+              fontSize: 10,
+              fontWeight: 700,
             }}
           >
-            {criticalCount > 9 ? '9+' : criticalCount}
+            {criticalCount}
           </span>
         )}
       </button>
@@ -110,35 +114,30 @@ export function Topbar() {
       {/* ── Divider ── */}
       <div style={{ width: 1, height: 24, background: 'var(--border)' }} />
 
-      {/* ── User ── */}
-      <div className="flex items-center" style={{ gap: 10 }}>
+      {/* ── User Menu ── */}
+      <div
+        onClick={() => alert(`Logged in as ${user?.name || 'User'}. Profile settings coming soon!`)}
+        className="flex items-center gap-3 cursor-pointer p-1 rounded-lg transition-colors hover:bg-[var(--bg-inset)] active:scale-95"
+      >
+        <div className="flex flex-col items-end hidden sm:flex">
+          <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', lineHeight: '16px' }}>
+            {user?.name || 'Admin'}
+          </span>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: '14px' }}>
+            {user?.role || 'SOC Analyst'}
+          </span>
+        </div>
         <div
-          className="flex items-center justify-center rounded-md shrink-0"
+          className="flex items-center justify-center rounded-full shrink-0"
           style={{
-            width: 32, height: 32,
-            background: 'var(--primary-bg)',
-            border: '1px solid var(--primary-ring)',
-            fontSize: 13, fontWeight: 600,
-            color: 'var(--primary)',
+            width: 36, height: 36,
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border)',
+            color: 'var(--text-primary)',
+            fontSize: 14, fontWeight: 600,
           }}
         >
-          {user?.name?.charAt(0).toUpperCase() ?? 'A'}
-        </div>
-        <div className="hidden sm:flex flex-col">
-          <span style={{
-            fontSize: 13, fontWeight: 500,
-            color: 'var(--text-primary)',
-            lineHeight: 1.2,
-          }}>
-            {user?.name ?? 'Analyst'}
-          </span>
-          <span style={{
-            fontSize: 11,
-            color: 'var(--text-muted)',
-            lineHeight: 1.2,
-          }}>
-            {user?.role ?? 'analyst'}
-          </span>
+          {user?.name?.charAt(0).toUpperCase() || 'A'}
         </div>
       </div>
     </header>

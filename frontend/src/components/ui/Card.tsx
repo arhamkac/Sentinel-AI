@@ -15,11 +15,11 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
         'rounded-[var(--radius-lg)] shadow-sm transition-all duration-200 overflow-hidden',
         
         // Variants
-        variant === 'default' && 'bg-[var(--bg-surface)] border border-[var(--border)]',
-        variant === 'glass'   && 'bg-[var(--bg-surface)]/80 backdrop-blur-md border border-[var(--border)]',
-        variant === 'inset'   && 'bg-[var(--bg-inset)] border border-[var(--border)] rounded-[var(--radius-md)]',
+        variant === 'default' && 'bg-[var(--bg-surface)]/70 backdrop-blur-md border border-[var(--border)]',
+        variant === 'glass'   && 'bg-[var(--bg-surface)]/40 backdrop-blur-xl border border-[var(--border)]',
+        variant === 'inset'   && 'bg-[var(--bg-inset)]/70 backdrop-blur-sm border border-[var(--border)] rounded-[var(--radius-md)]',
 
-        hover && 'hover:border-[var(--border-strong)] hover:shadow-md',
+        hover && 'hover:border-[var(--border-strong)] hover:shadow-md hover:bg-[var(--bg-surface)]/90',
         glow  && 'shadow-[0_0_16px_var(--primary-ring)]',
 
         className
