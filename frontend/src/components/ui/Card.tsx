@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   glow?: boolean
   hover?: boolean
-  variant?: 'default' | 'glass' | 'hud' | 'terminal' | 'danger'
+  variant?: 'default' | 'glass' | 'inset'
 }
 
 const Card = React.forwardRef<HTMLDivElement, CardProps>(
@@ -12,20 +12,15 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
     <div
       ref={ref}
       className={cn(
-        'rounded-2xl shadow-[0_4px_32px_rgba(0,0,0,0.6)]',
+        'rounded-[var(--radius-lg)] shadow-sm transition-all duration-200 overflow-hidden',
+        
+        // Variants
+        variant === 'default' && 'bg-[var(--bg-surface)] border border-[var(--border)]',
+        variant === 'glass'   && 'bg-[var(--bg-surface)]/80 backdrop-blur-md border border-[var(--border)]',
+        variant === 'inset'   && 'bg-[var(--bg-inset)] border border-[var(--border)] rounded-[var(--radius-md)]',
 
-        // Variant styles
-        variant === 'default' && 'border border-border bg-surface',
-        variant === 'glass'   && 'border border-border bg-surface/70 backdrop-blur-xl',
-        variant === 'hud'     && 'bg-surface border border-border',
-        variant === 'terminal' && 'border border-border bg-bg-2 font-mono terminal-screen',
-        variant === 'danger'  && 'border border-danger/20 bg-surface',
-
-        // HUD top border accent
-        (variant === 'hud' || variant === 'glass') && '[border-top:1px_solid_rgba(142,221,190,0.25)]',
-
-        hover && 'transition-all duration-200 hover:border-primary/20 hover:[box-shadow:0_8px_40px_rgba(0,0,0,0.7),0_0_0_1px_rgba(142,221,190,0.06)]',
-        glow  && 'shadow-[0_0_0_1px_rgba(142,221,190,0.1),0_4px_32px_rgba(0,0,0,0.6),0_0_24px_rgba(142,221,190,0.08)]',
+        hover && 'hover:border-[var(--border-strong)] hover:shadow-md',
+        glow  && 'shadow-[0_0_16px_var(--primary-ring)]',
 
         className
       )}
@@ -46,7 +41,7 @@ const CardTitle = React.forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTML
   ({ className, ...props }, ref) => (
     <h3
       ref={ref}
-      className={cn('text-sm font-semibold text-[#E2E8F0] leading-tight tracking-tight', className)}
+      className={cn('text-sm font-semibold text-[var(--text-primary)] leading-tight tracking-tight', className)}
       {...props}
     />
   )
@@ -55,7 +50,7 @@ CardTitle.displayName = 'CardTitle'
 
 const CardDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
   ({ className, ...props }, ref) => (
-    <p ref={ref} className={cn('text-xs text-[#3d566e]', className)} {...props} />
+    <p ref={ref} className={cn('text-xs text-[var(--text-muted)]', className)} {...props} />
   )
 )
 CardDescription.displayName = 'CardDescription'
@@ -69,7 +64,7 @@ CardContent.displayName = 'CardContent'
 
 const CardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn('flex items-center px-6 pb-6 pt-0', className)} {...props} />
+    <div ref={ref} className={cn('flex items-center p-6 pt-0', className)} {...props} />
   )
 )
 CardFooter.displayName = 'CardFooter'

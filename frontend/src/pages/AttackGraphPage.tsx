@@ -10,17 +10,16 @@ import 'reactflow/dist/style.css'
 import { motion } from 'framer-motion'
 import { GitBranch, AlertTriangle, Monitor, User, Network, Target, Skull, Cpu } from 'lucide-react'
 import { PageContainer } from '@/components/layout'
-import { Card, CardContent, Badge, SeverityBadge, Skeleton } from '@/components/ui'
+import { Card, CardContent } from '@/components/ui/Card'
 import { incidentsService } from '@/services/incidents.service'
 import type { AttackGraph } from '@/types'
-import { getSeverityColor } from '@/lib/utils'
 
-// ─── Glowing node wrapper component ──────────────────────────────
+// ─── Custom Node Components ───────────────────────────────────────
 interface NodeContainerProps {
   icon: React.ElementType
   title: string
   subtitle?: string
-  color: string
+  colorVar: string
   badge?: string
   target?: boolean
   source?: boolean
@@ -30,80 +29,63 @@ function NodeContainer({
   icon: Icon,
   title,
   subtitle,
-  color,
+  colorVar,
   badge,
   target = true,
   source = true,
 }: NodeContainerProps) {
   return (
-    <div style={{ position: 'relative', fontFamily: 'var(--font-mono)' }}>
-      {/* Ambient shadow glow */}
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          borderRadius: 'var(--r-xl)',
-          background: color,
-          filter: 'blur(8px)',
-          opacity: 0.18,
-          zIndex: -1,
-        }}
-      />
-
-      {/* Target connection point */}
+    <div className="relative font-mono">
+      {/* Target Handle */}
       {target && (
         <Handle
           type="target"
           position={Position.Left}
           style={{
-            background: color,
-            border: '2px solid #071022',
-            width: 8,
-            height: 8,
-            boxShadow: `0 0 6px ${color}`,
+            background: `var(--${colorVar})`,
+            border: '2px solid var(--bg-surface)',
+            width: 10,
+            height: 10,
           }}
         />
       )}
 
-      {/* Main card box */}
+      {/* Main Node Card */}
       <div
-        className="px-4 py-3 rounded-xl border flex flex-col justify-center min-w-[200px] max-w-[240px] transition-all duration-200"
+        className="px-4 py-3 rounded-xl border flex flex-col justify-center min-w-[200px] max-w-[240px] transition-all bg-[var(--bg-surface)] shadow-md"
         style={{
-          background: 'rgba(7, 16, 34, 0.85)',
-          borderColor: `${color}35`,
-          borderLeft: `4px solid ${color}`,
-          boxShadow: `0 8px 32px 0 rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.03)`,
+          borderColor: `var(--border)`,
+          borderLeft: `4px solid var(--${colorVar})`,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
-          <span style={{ fontSize: 8, color: 'var(--tx-low)', letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: 600 }}>
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <span className="text-[10px] text-[var(--text-muted)] tracking-wider uppercase font-semibold">
             {badge || 'NODE'}
           </span>
-          <Icon style={{ width: 12, height: 12, color }} />
+          <Icon className="w-4 h-4" style={{ color: `var(--${colorVar})` }} />
         </div>
 
-        <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--tx-high)', fontFamily: 'var(--font-sans)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <p className="text-sm font-semibold text-[var(--text-primary)] font-sans whitespace-nowrap overflow-hidden text-ellipsis">
           {title}
         </p>
 
         {subtitle && (
-          <p style={{ fontSize: 9, color: 'var(--tx-low)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <p className="text-[11px] text-[var(--text-muted)] mt-1 whitespace-nowrap overflow-hidden text-ellipsis">
             {subtitle}
           </p>
         )}
       </div>
 
-      {/* Source connection point */}
+      {/* Source Handle */}
       {source && (
         <Handle
           type="source"
           position={Position.Right}
           style={{
-            background: color,
-            border: '2px solid #071022',
-            width: 8,
-            height: 8,
-            boxShadow: `0 0 6px ${color}`,
+            background: `var(--${colorVar})`,
+            border: '2px solid var(--bg-surface)',
+            width: 10,
+            height: 10,
           }}
         />
       )}
@@ -111,14 +93,19 @@ function NodeContainer({
   )
 }
 
+function getSeverityColorVar(severity?: string) {
+  if (severity === 'critical') return 'danger'
+  if (severity === 'high') return 'warning'
+  return 'primary'
+}
+
 function TechniqueNode({ data }: { data: { label: string; severity?: string; mitre_id?: string } }) {
-  const color = data.severity ? getSeverityColor(data.severity) : 'var(--warn)'
   return (
     <NodeContainer
       icon={GitBranch}
       title={data.label}
       subtitle={data.mitre_id}
-      color={color}
+      colorVar={getSeverityColorVar(data.severity)}
       badge="mitre technique"
     />
   )
@@ -130,7 +117,7 @@ function HostNode({ data }: { data: { label: string } }) {
       icon={Monitor}
       title={data.label}
       subtitle="Endpoint Host"
-      color="var(--accent)"
+      colorVar="primary"
       badge="host asset"
     />
   )
@@ -142,7 +129,7 @@ function UserNode({ data }: { data: { label: string } }) {
       icon={User}
       title={data.label}
       subtitle="Identity Profile"
-      color="#A78BFA"
+      colorVar="warning"
       badge="user credential"
     />
   )
@@ -154,7 +141,7 @@ function NetworkNode({ data }: { data: { label: string } }) {
       icon={Network}
       title={data.label}
       subtitle="Network Segment"
-      color="#34D399"
+      colorVar="info"
       badge="network zone"
     />
   )
@@ -166,7 +153,7 @@ function ObjectiveNode({ data }: { data: { label: string } }) {
       icon={Target}
       title={data.label}
       subtitle="Impact Status"
-      color="var(--danger)"
+      colorVar="danger"
       badge="objective target"
       source={false}
     />
@@ -179,7 +166,7 @@ function ThreatActorNode({ data }: { data: { label: string } }) {
       icon={Skull}
       title={data.label}
       subtitle="Attribution Profile"
-      color="#F43F5E"
+      colorVar="danger"
       badge="threat actor"
       target={false}
     />
@@ -192,7 +179,7 @@ function PhysicalAssetNode({ data }: { data: { label: string } }) {
       icon={Cpu}
       title={data.label}
       subtitle="Grid Equipment"
-      color="var(--warn)"
+      colorVar="warning"
       badge="physical asset"
     />
   )
@@ -238,15 +225,9 @@ const MOCK_GRAPH: AttackGraph = {
 
 function buildFlowElements(graph: AttackGraph): { nodes: Node[]; edges: Edge[] } {
   const positions: Record<string, { x: number; y: number }> = {
-    n1: { x: 0,   y: 200 }, n2: { x: 200, y: 100 }, n3: { x: 400, y: 200 },
-    n4: { x: 600, y: 100 }, n5: { x: 800, y: 200 }, n6: { x: 1000, y: 100 },
-    n7: { x: 1200, y: 200 }, n8: { x: 1400, y: 100 }, n9: { x: 1600, y: 200 },
-
-    attacker: { x: 0, y: 180 },
-    'ws-07': { x: 250, y: 100 },
-    'user-rsharma': { x: 500, y: 180 },
-    'scada-ws-02': { x: 750, y: 100 },
-    'breaker-4': { x: 1000, y: 180 },
+    n1: { x: 0,   y: 200 }, n2: { x: 250, y: 100 }, n3: { x: 500, y: 200 },
+    n4: { x: 750, y: 100 }, n5: { x: 1000, y: 200 }, n6: { x: 1250, y: 100 },
+    n7: { x: 1500, y: 200 }, n8: { x: 1750, y: 100 }, n9: { x: 2000, y: 200 },
   }
 
   const nodes: Node[] = graph.nodes.map(n => ({
@@ -262,9 +243,9 @@ function buildFlowElements(graph: AttackGraph): { nodes: Node[]; edges: Edge[] }
     target: e.target,
     label: e.label,
     animated: true,
-    style: { stroke: 'rgba(0, 217, 180, 0.45)', strokeWidth: 2, filter: 'drop-shadow(0 0 3px rgba(0, 217, 180, 0.25))' },
-    labelStyle: { fill: 'var(--tx-low)', fontSize: 9, fontFamily: 'var(--font-mono)' },
-    markerEnd: { type: MarkerType.ArrowClosed, color: 'var(--accent)' },
+    style: { stroke: 'var(--border-strong)', strokeWidth: 2 },
+    labelStyle: { fill: 'var(--text-secondary)', fontSize: 11, fontFamily: 'var(--font-mono)' },
+    markerEnd: { type: MarkerType.ArrowClosed, color: 'var(--border-strong)' },
   }))
 
   return { nodes, edges }
@@ -283,25 +264,27 @@ export function AttackGraphPage() {
   const { nodes, edges } = useMemo(() => buildFlowElements(displayGraph), [displayGraph])
 
   return (
-    <PageContainer>
-      {/* Page header */}
+    <PageContainer className="flex flex-col gap-6">
+      
+      {/* ── Page Header ── */}
       <div>
-        <div className="text-[9px] font-mono uppercase tracking-[0.15em] mb-1" style={{ color: '#3d566e' }}>Cyber Kill Chain Visualization</div>
-        <h1 className="text-xl font-bold font-mono" style={{ color: '#E2E8F0' }}>Attack Graph</h1>
-        <p className="text-[11px] font-mono mt-0.5" style={{ color: '#8FA3BF' }}>Visual map of attack progression and lateral movement</p>
+        <h1 className="text-xl font-semibold text-[var(--text-primary)]">Attack Graph</h1>
+        <p className="text-[var(--text-muted)] mt-1">Visual map of attack progression and lateral movement.</p>
       </div>
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-5">
-        {/* Graph */}
+
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+        
+        {/* ── Graph ── */}
         <motion.div
           className="xl:col-span-3"
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.3 }}
         >
-          <div className="rounded-xl border border-[#1E293B] bg-[#0A1120] overflow-hidden" style={{ height: 540 }}>
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-inset)] overflow-hidden" style={{ height: 600 }}>
             {isLoading ? (
               <div className="flex items-center justify-center h-full">
-                <Skeleton className="h-full w-full" />
+                <div className="animate-pulse w-full h-full bg-[var(--bg-surface)]" />
               </div>
             ) : (
               <ReactFlow
@@ -314,16 +297,14 @@ export function AttackGraphPage() {
                 maxZoom={2}
                 proOptions={{ hideAttribution: true }}
               >
-                <Background color="var(--color-border)" gap={24} size={1} />
-                <Controls
-                  style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
-                />
-                <MiniMap
-                  style={{ background: 'var(--color-bg-2)', border: '1px solid var(--color-border)' }}
+                <Background color="var(--border)" gap={24} size={1} />
+                <Controls />
+                <MiniMap 
+                  style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}
                   nodeColor={n => {
-                    if (n.type === 'objective') return '#E75A43'
-                    if (n.type === 'technique') return '#8EDDBE'
-                    return '#1a2942'
+                    if (n.type === 'objective') return 'var(--danger)'
+                    if (n.type === 'technique') return 'var(--primary)'
+                    return 'var(--text-muted)'
                   }}
                 />
               </ReactFlow>
@@ -331,22 +312,22 @@ export function AttackGraphPage() {
           </div>
         </motion.div>
 
-        {/* Legend / summary */}
-        <div className="flex flex-col gap-4">
+        {/* ── Legend / Summary ── */}
+        <div className="flex flex-col gap-6">
           <Card>
-            <CardContent className="pt-4">
-              <h3 className="text-xs font-semibold text-[#8FA3BF] uppercase tracking-wider mb-3 font-mono">Node Types</h3>
-              <div className="flex flex-col gap-2 text-xs">
+            <CardContent className="pt-5">
+              <h3 className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4 font-mono">Node Types</h3>
+              <div className="flex flex-col gap-3 text-sm">
                 {[
-                  { icon: <Monitor className="w-3.5 h-3.5" />, label: 'Host / Asset', color: '#8FA3BF' },
-                  { icon: <User className="w-3.5 h-3.5" />, label: 'User Account', color: '#3d566e' },
-                  { icon: <Network className="w-3.5 h-3.5" />, label: 'Network', color: '#3d566e' },
-                  { icon: <GitBranch className="w-3.5 h-3.5" />, label: 'MITRE Technique', color: '#8EDDBE' },
-                  { icon: <Target className="w-3.5 h-3.5" />, label: 'Objective', color: '#E75A43' },
+                  { icon: <Monitor className="w-4 h-4" />, label: 'Host / Asset', color: 'text-[var(--primary)]' },
+                  { icon: <User className="w-4 h-4" />, label: 'User Account', color: 'text-[var(--warning)]' },
+                  { icon: <Network className="w-4 h-4" />, label: 'Network', color: 'text-[var(--info)]' },
+                  { icon: <GitBranch className="w-4 h-4" />, label: 'MITRE Technique', color: 'text-[var(--primary)]' },
+                  { icon: <Target className="w-4 h-4" />, label: 'Objective', color: 'text-[var(--danger)]' },
                 ].map(({ icon, label, color }) => (
-                  <div key={label} className="flex items-center gap-2" style={{ color }}>
-                    {icon}
-                    <span>{label}</span>
+                  <div key={label} className="flex items-center gap-3">
+                    <span className={color}>{icon}</span>
+                    <span className="text-[var(--text-primary)]">{label}</span>
                   </div>
                 ))}
               </div>
@@ -354,40 +335,29 @@ export function AttackGraphPage() {
           </Card>
 
           <Card>
-            <CardContent className="pt-4">
-              <h3 className="text-xs font-semibold text-[#8FA3BF] uppercase tracking-wider mb-3 font-mono">Attack Stages</h3>
-              <div className="flex flex-col gap-2">
-                {displayGraph.nodes
-                  .filter(n => n.type === 'technique')
-                  .map(n => (
-                    <div key={n.id} className="flex items-center gap-2 text-xs">
-                      <SeverityBadge severity={n.severity ?? 'info'} />
-                      <span className="text-[#8FA3BF] truncate">{n.label}</span>
-                    </div>
-                  ))
-                }
+            <CardContent className="pt-5">
+              <div className="flex items-center gap-2 mb-4">
+                <AlertTriangle className="w-4 h-4 text-[var(--danger)]" />
+                <h3 className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider font-mono">Summary</h3>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-4">
-              <div className="flex items-center gap-2 mb-2">
-                <AlertTriangle className="w-4 h-4 text-danger" />
-                <h3 className="text-xs font-semibold text-[#8FA3BF] uppercase tracking-wider font-mono">Summary</h3>
-              </div>
-              <div className="flex flex-col gap-2 text-xs text-[#3d566e] font-mono">
-                <div className="flex justify-between">
+              <div className="flex flex-col gap-3 text-sm text-[var(--text-muted)] font-mono">
+                <div className="flex justify-between items-center">
                   <span>Total nodes</span>
-                  <Badge variant="default">{displayGraph.nodes.length}</Badge>
+                  <span className="px-2 py-0.5 rounded-md bg-[var(--bg-inset)] border border-[var(--border)] text-[var(--text-primary)]">
+                    {displayGraph.nodes.length}
+                  </span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <span>Attack stages</span>
-                  <Badge variant="default">{displayGraph.edges.length}</Badge>
+                  <span className="px-2 py-0.5 rounded-md bg-[var(--bg-inset)] border border-[var(--border)] text-[var(--text-primary)]">
+                    {displayGraph.edges.length}
+                  </span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <span>Techniques</span>
-                  <Badge variant="primary">{displayGraph.nodes.filter(n => n.type === 'technique').length}</Badge>
+                  <span className="px-2 py-0.5 rounded-md bg-[var(--primary-bg)] border border-[var(--primary-ring)] text-[var(--primary)]">
+                    {displayGraph.nodes.filter(n => n.type === 'technique').length}
+                  </span>
                 </div>
               </div>
             </CardContent>

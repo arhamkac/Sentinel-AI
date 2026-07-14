@@ -3,15 +3,9 @@ import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { Search, Shield } from 'lucide-react'
 import { PageContainer } from '@/components/layout'
+import { Card, CardContent } from '@/components/ui/Card'
 import { MITRE_TACTICS } from '@/lib/constants'
 import type { MitreTechnique } from '@/types'
-
-const PRIMARY = '#00D9B4'
-const DIM     = '#3d566e'
-const MUTED   = '#8FA3BF'
-const BRIGHT  = '#E2E8F0'
-const SURFACE = '#071022'
-const BORDER  = '#162030'
 
 const MOCK_TECHNIQUES: MitreTechnique[] = [
   { technique_id:'T1566', technique_name:'Phishing',                           tactic:'initial_access',      description:'Adversaries may send phishing messages to gain access to victim systems.',               subtechniques:['T1566.001','T1566.002'], platforms:['Windows','macOS','Linux'], detection:'Monitor email flows and attachment execution.',         mitigation:'User training, email filtering' },
@@ -48,83 +42,114 @@ export function MitrePage() {
   )
 
   return (
-    <PageContainer>
-      {/* Page header */}
+    <PageContainer className="flex flex-col gap-6">
+      
+      {/* ── Page Header ── */}
       <div>
-        <div className="text-[9px] font-mono uppercase tracking-[0.15em] mb-1" style={{ color: DIM }}>Adversary Tactics Framework</div>
-        <h1 className="text-xl font-bold font-mono" style={{ color: BRIGHT }}>MITRE ATT&CK Matrix</h1>
-        <p className="text-[11px] font-mono mt-0.5" style={{ color: MUTED }}>Adversary tactics, techniques, and procedures mapped to incidents</p>
+        <h1 className="text-xl font-semibold text-[var(--text-primary)]">MITRE ATT&CK Matrix</h1>
+        <p className="text-[var(--text-muted)] mt-1">Adversary tactics, techniques, and procedures mapped to incidents.</p>
       </div>
 
-      {/* Tactic filter pills */}
-      <div className="flex flex-wrap gap-2">
-        <button
-          onClick={() => setSelectedTactic('')}
-          className="px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase border transition-all cursor-pointer"
-          style={{ background: selectedTactic === '' ? PRIMARY + '15' : 'transparent', borderColor: selectedTactic === '' ? PRIMARY + '50' : BORDER, color: selectedTactic === '' ? PRIMARY : MUTED }}
-        >
-          All Tactics
-        </button>
-        {MITRE_TACTICS.map(tactic => (
+      {/* ── Filters ── */}
+      <div className="flex flex-col gap-4">
+        
+        {/* Tactic Pills */}
+        <div className="flex flex-wrap gap-2">
           <button
-            key={tactic.key}
-            onClick={() => setSelectedTactic(selectedTactic === tactic.key ? '' : tactic.key)}
-            className="px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase border transition-all cursor-pointer"
-            style={{
-              background: selectedTactic === tactic.key ? (TACTIC_COLORS[tactic.key] ?? PRIMARY) + '20' : 'transparent',
-              borderColor: selectedTactic === tactic.key ? (TACTIC_COLORS[tactic.key] ?? PRIMARY) + '50' : BORDER,
-              color: selectedTactic === tactic.key ? (TACTIC_COLORS[tactic.key] ?? PRIMARY) : MUTED,
-            }}
+            onClick={() => setSelectedTactic('')}
+            className={`px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer border ${
+              selectedTactic === '' 
+                ? 'bg-[var(--primary-bg)] border-[var(--primary-ring)] text-[var(--primary)]' 
+                : 'bg-transparent border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)]'
+            }`}
           >
-            {tactic.name}
+            All Tactics
           </button>
-        ))}
+          {MITRE_TACTICS.map(tactic => {
+            const isSelected = selectedTactic === tactic.key;
+            const tColor = TACTIC_COLORS[tactic.key] ?? 'var(--primary)';
+            return (
+              <button
+                key={tactic.key}
+                onClick={() => setSelectedTactic(selectedTactic === tactic.key ? '' : tactic.key)}
+                className="px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer border"
+                style={{
+                  background: isSelected ? `${tColor}20` : 'transparent',
+                  borderColor: isSelected ? `${tColor}50` : 'var(--border)',
+                  color: isSelected ? tColor : 'var(--text-muted)',
+                }}
+              >
+                {tactic.name}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Search Input */}
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-[var(--border)] bg-[var(--bg-inset)] max-w-sm focus-within:border-[var(--primary-dim)] transition-colors">
+          <Search className="w-4 h-4 text-[var(--text-muted)] shrink-0" />
+          <input
+            className="bg-transparent flex-1 text-sm text-[var(--text-primary)] outline-none placeholder-[var(--text-muted)]"
+            placeholder="Search techniques or IDs..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+        </div>
+        
       </div>
 
-      {/* Search */}
-      <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl border max-w-sm" style={{ background: SURFACE, borderColor: BORDER }}>
-        <Search style={{ width: 13, height: 13, color: DIM }} />
-        <input
-          className="bg-transparent flex-1 text-[11px] font-mono outline-none"
-          style={{ color: BRIGHT }}
-          placeholder="Search techniques or IDs..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
-      </div>
-
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
-        {/* Techniques list */}
-        <div className="xl:col-span-2 flex flex-col gap-2">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        
+        {/* ── Techniques List (2/3) ── */}
+        <div className="xl:col-span-2 flex flex-col gap-3">
           {filtered.map((t: MitreTechnique, i: number) => {
-            const tc = TACTIC_COLORS[t.tactic] ?? PRIMARY
+            const tc = TACTIC_COLORS[t.tactic] ?? 'var(--primary)'
             const isSelected = selected?.technique_id === t.technique_id
+            
             return (
               <motion.div key={t.technique_id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.02 }}>
                 <div
-                  className="flex items-start gap-3 px-4 py-3 rounded-2xl border cursor-pointer transition-all"
-                  style={{ background: SURFACE, borderColor: isSelected ? tc + '50' : BORDER, borderLeftWidth: 2, borderLeftColor: tc }}
+                  className={`flex items-start gap-4 p-4 rounded-xl border cursor-pointer transition-all ${
+                    isSelected ? 'bg-[var(--bg-hover)]' : 'bg-[var(--bg-surface)] hover:border-[var(--border-strong)]'
+                  }`}
+                  style={{ 
+                    borderColor: isSelected ? `${tc}50` : 'var(--border)', 
+                    borderLeftWidth: isSelected ? 4 : 1, 
+                    borderLeftColor: isSelected ? tc : 'var(--border)' 
+                  }}
                   onClick={() => setSelected(t)}
                 >
-                  <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ background: tc + '18', border: `1px solid ${tc}30` }}>
-                    <Shield style={{ width: 14, height: 14, color: tc }} />
+                  <div 
+                    className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border"
+                    style={{ background: `${tc}15`, borderColor: `${tc}30` }}
+                  >
+                    <Shield className="w-5 h-5" style={{ color: tc }} />
                   </div>
+                  
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <span className="text-[9px] font-mono px-2 py-0.5 rounded border font-bold"
-                        style={{ color: tc, borderColor: tc + '40', background: tc + '12' }}>
+                    <div className="flex items-center gap-3 flex-wrap mb-1">
+                      <span 
+                        className="text-[10px] uppercase font-bold px-2 py-0.5 rounded border"
+                        style={{ color: tc, borderColor: `${tc}40`, background: `${tc}15` }}
+                      >
                         {t.technique_id}
                       </span>
-                      <span className="text-[13px] font-bold font-mono" style={{ color: BRIGHT }}>{t.technique_name}</span>
+                      <span className="text-sm font-semibold text-[var(--text-primary)]">{t.technique_name}</span>
                     </div>
-                    <p className="text-[10px] mb-1.5 line-clamp-1" style={{ color: MUTED }}>{t.description}</p>
+                    <p className="text-xs text-[var(--text-secondary)] mb-2 line-clamp-1 leading-relaxed">
+                      {t.description}
+                    </p>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[9px] font-mono px-2 py-0.5 rounded-full"
-                        style={{ color: tc, background: tc + '12' }}>{t.tactic.replace(/_/g, ' ')}</span>
+                      <span 
+                        className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full"
+                        style={{ color: tc, background: `${tc}15` }}
+                      >
+                        {t.tactic.replace(/_/g, ' ')}
+                      </span>
                       {t.platforms.slice(0, 3).map((p: string) => (
-                        <span key={p} className="text-[9px] font-mono px-2 py-0.5 rounded border"
-                          style={{ color: MUTED, borderColor: BORDER }}>{p}</span>
+                        <span key={p} className="text-[10px] px-2 py-0.5 rounded border border-[var(--border)] bg-[var(--bg-inset)] text-[var(--text-muted)]">
+                          {p}
+                        </span>
                       ))}
                     </div>
                   </div>
@@ -132,49 +157,79 @@ export function MitrePage() {
               </motion.div>
             )
           })}
+          {filtered.length === 0 && (
+            <div className="p-8 text-center text-[var(--text-muted)] text-sm border border-[var(--border)] rounded-xl bg-[var(--bg-surface)]">
+              No techniques found matching your search.
+            </div>
+          )}
         </div>
 
-        {/* Detail panel */}
-        {selected && (
-          <motion.div initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }}>
-            <div className="sticky top-4 rounded-2xl border p-5 space-y-4" style={{ background: SURFACE, borderColor: BORDER }}>
-              <div>
-                <span className="text-[9px] font-mono px-2 py-0.5 rounded border font-bold"
-                  style={{ color: TACTIC_COLORS[selected.tactic] ?? PRIMARY, borderColor: (TACTIC_COLORS[selected.tactic] ?? PRIMARY) + '40', background: (TACTIC_COLORS[selected.tactic] ?? PRIMARY) + '12' }}>
-                  {selected.technique_id}
-                </span>
-                <h3 className="text-sm font-bold font-mono mt-2" style={{ color: BRIGHT }}>{selected.technique_name}</h3>
-                <span className="text-[9px] font-mono px-2 py-0.5 rounded-full mt-1 inline-block"
-                  style={{ color: TACTIC_COLORS[selected.tactic] ?? PRIMARY, background: (TACTIC_COLORS[selected.tactic] ?? PRIMARY) + '15' }}>
-                  {selected.tactic.replace(/_/g, ' ')}
-                </span>
-              </div>
+        {/* ── Detail Panel (1/3) ── */}
+        <div>
+          {selected ? (
+            <motion.div initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} className="sticky top-6">
+              <Card>
+                <CardContent className="p-6 flex flex-col gap-6">
+                  
+                  <div>
+                    <span 
+                      className="text-[10px] uppercase font-bold px-2 py-0.5 rounded border inline-block mb-3"
+                      style={{ 
+                        color: TACTIC_COLORS[selected.tactic] ?? 'var(--primary)', 
+                        borderColor: (TACTIC_COLORS[selected.tactic] ?? 'var(--primary)') + '40', 
+                        background: (TACTIC_COLORS[selected.tactic] ?? 'var(--primary)') + '15' 
+                      }}
+                    >
+                      {selected.technique_id}
+                    </span>
+                    <h3 className="text-lg font-bold text-[var(--text-primary)]">{selected.technique_name}</h3>
+                    <span 
+                      className="text-[10px] uppercase font-semibold px-2.5 py-1 rounded-full mt-2 inline-block"
+                      style={{ 
+                        color: TACTIC_COLORS[selected.tactic] ?? 'var(--primary)', 
+                        background: (TACTIC_COLORS[selected.tactic] ?? 'var(--primary)') + '15' 
+                      }}
+                    >
+                      {selected.tactic.replace(/_/g, ' ')}
+                    </span>
+                  </div>
 
-              {[
-                { title: 'Description', body: selected.description },
-                { title: 'Detection',   body: selected.detection   },
-                { title: 'Mitigation',  body: selected.mitigation  },
-              ].map(s => (
-                <div key={s.title}>
-                  <div className="text-[9px] font-mono uppercase tracking-widest mb-1.5" style={{ color: DIM }}>{s.title}</div>
-                  <p className="text-[11px] leading-relaxed" style={{ color: MUTED }}>{s.body}</p>
-                </div>
-              ))}
-
-              {selected.subtechniques.length > 0 && (
-                <div>
-                  <div className="text-[9px] font-mono uppercase tracking-widest mb-1.5" style={{ color: DIM }}>Sub-Techniques</div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {selected.subtechniques.map(s => (
-                      <span key={s} className="text-[9px] font-mono px-2 py-0.5 rounded border"
-                        style={{ color: MUTED, borderColor: BORDER }}>{s}</span>
+                  <div className="flex flex-col gap-5">
+                    {[
+                      { title: 'Description', body: selected.description },
+                      { title: 'Detection',   body: selected.detection   },
+                      { title: 'Mitigation',  body: selected.mitigation  },
+                    ].map(s => (
+                      <div key={s.title}>
+                        <div className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-2">{s.title}</div>
+                        <p className="text-sm leading-relaxed text-[var(--text-muted)]">{s.body}</p>
+                      </div>
                     ))}
                   </div>
-                </div>
-              )}
+
+                  {selected.subtechniques.length > 0 && (
+                    <div className="pt-2 border-t border-[var(--border)]">
+                      <div className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-2">Sub-Techniques</div>
+                      <div className="flex flex-wrap gap-2">
+                        {selected.subtechniques.map(s => (
+                          <span key={s} className="text-xs px-2 py-1 rounded border border-[var(--border)] bg-[var(--bg-inset)] text-[var(--text-muted)]">
+                            {s}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                </CardContent>
+              </Card>
+            </motion.div>
+          ) : (
+            <div className="p-8 text-center text-[var(--text-muted)] text-sm border border-[var(--border)] rounded-xl bg-[var(--bg-surface)] sticky top-6">
+              Select a technique to view details.
             </div>
-          </motion.div>
-        )}
+          )}
+        </div>
+
       </div>
     </PageContainer>
   )

@@ -1,18 +1,10 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Search, Globe, Hash, Link, Mail, AlertTriangle, Zap } from 'lucide-react'
+import { Search, Globe, Hash, Link, Mail, AlertTriangle, Zap, Activity } from 'lucide-react'
 import { PageContainer } from '@/components/layout'
+import { Card, CardContent } from '@/components/ui/Card'
 import { formatDate } from '@/lib/utils'
 import type { ThreatIndicator } from '@/types'
-
-const PRIMARY = '#00D9B4'
-const WARN    = '#FFB040'
-const DANGER  = '#E75A43'
-const DIM     = '#3d566e'
-const MUTED   = '#8FA3BF'
-const BRIGHT  = '#E2E8F0'
-const SURFACE = '#071022'
-const BORDER  = '#162030'
 
 const MOCK_INDICATORS: ThreatIndicator[] = [
   { id:'1', type:'ip',     value:'185.220.101.47',                           severity:'critical', confidence:0.98, tags:['TOR exit node','C2','Ransomware'],         source:'Threat Intel Feed', description:'Known Tor exit node used by ransomware groups for C2 communications.', first_seen:'2024-01-15T10:00:00Z', last_seen: new Date().toISOString() },
@@ -23,16 +15,12 @@ const MOCK_INDICATORS: ThreatIndicator[] = [
 ]
 
 const TYPE_ICONS: Record<string, React.ReactNode> = {
-  ip:     <Globe className="w-3.5 h-3.5" />,
-  domain: <Link  className="w-3.5 h-3.5" />,
-  hash:   <Hash  className="w-3.5 h-3.5" />,
-  url:    <Link  className="w-3.5 h-3.5" />,
-  email:  <Mail  className="w-3.5 h-3.5" />,
-  cve:    <AlertTriangle className="w-3.5 h-3.5" />,
-}
-
-function severityColor(s: string) {
-  return s === 'critical' ? DANGER : s === 'high' ? WARN : s === 'medium' ? '#7C3AED' : DIM
+  ip:     <Globe className="w-4 h-4" />,
+  domain: <Link  className="w-4 h-4" />,
+  hash:   <Hash  className="w-4 h-4" />,
+  url:    <Link  className="w-4 h-4" />,
+  email:  <Mail  className="w-4 h-4" />,
+  cve:    <AlertTriangle className="w-4 h-4" />,
 }
 
 export function ThreatIntelPage() {
@@ -45,115 +33,147 @@ export function ThreatIntelPage() {
   )
 
   const stats = [
-    { label: 'Total IOCs', value: MOCK_INDICATORS.length, color: PRIMARY },
-    { label: 'Critical',   value: MOCK_INDICATORS.filter(i => i.severity === 'critical').length, color: DANGER },
-    { label: 'IPs',        value: MOCK_INDICATORS.filter(i => i.type === 'ip').length,     color: MUTED },
-    { label: 'Domains',    value: MOCK_INDICATORS.filter(i => i.type === 'domain').length,  color: MUTED },
-    { label: 'Hashes',     value: MOCK_INDICATORS.filter(i => i.type === 'hash').length,    color: MUTED },
-    { label: 'CVEs',       value: MOCK_INDICATORS.filter(i => i.type === 'cve').length,     color: WARN  },
+    { label: 'Total IOCs', value: MOCK_INDICATORS.length, color: 'text-[var(--primary)]', bg: 'bg-[var(--primary-bg)]', border: 'border-[var(--primary-ring)]' },
+    { label: 'Critical',   value: MOCK_INDICATORS.filter(i => i.severity === 'critical').length, color: 'text-[var(--danger)]', bg: 'bg-[var(--danger-bg)]', border: 'border-[var(--danger-ring)]' },
+    { label: 'IPs',        value: MOCK_INDICATORS.filter(i => i.type === 'ip').length, color: 'text-[var(--text-primary)]', bg: 'bg-[var(--bg-inset)]', border: 'border-[var(--border)]' },
+    { label: 'Domains',    value: MOCK_INDICATORS.filter(i => i.type === 'domain').length, color: 'text-[var(--text-primary)]', bg: 'bg-[var(--bg-inset)]', border: 'border-[var(--border)]' },
+    { label: 'Hashes',     value: MOCK_INDICATORS.filter(i => i.type === 'hash').length, color: 'text-[var(--text-primary)]', bg: 'bg-[var(--bg-inset)]', border: 'border-[var(--border)]' },
+    { label: 'CVEs',       value: MOCK_INDICATORS.filter(i => i.type === 'cve').length, color: 'text-[var(--warning)]', bg: 'bg-[var(--warning-bg)]', border: 'border-[var(--warning-ring)]' },
   ]
 
   return (
-    <PageContainer>
-      {/* Page header */}
-      <div className="flex items-start justify-between">
+    <PageContainer className="flex flex-col gap-6">
+      
+      {/* ── Page Header ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="text-[9px] font-mono uppercase tracking-[0.15em] mb-1" style={{ color: DIM }}>Threat Intelligence Platform</div>
-          <h1 className="text-xl font-bold font-mono" style={{ color: BRIGHT }}>Threat Intel Feed</h1>
-          <p className="text-[11px] font-mono mt-0.5" style={{ color: MUTED }}>Known threat indicators and adversary infrastructure</p>
+          <h1 className="text-xl font-semibold text-[var(--text-primary)]">Threat Intel Feed</h1>
+          <p className="text-[var(--text-muted)] mt-1">Known threat indicators and adversary infrastructure.</p>
         </div>
-        <div className="flex items-center gap-1.5">
-          <Zap style={{ width: 12, height: 12, color: DANGER }} />
-          <span className="text-[9px] font-mono uppercase tracking-wider" style={{ color: MUTED }}>Live Feed Active</span>
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-[var(--danger-ring)] bg-[var(--danger-bg)]">
+          <Zap className="w-4 h-4 text-[var(--danger)]" />
+          <span className="text-xs font-bold text-[var(--danger)] uppercase tracking-wider">Live Feed Active</span>
         </div>
       </div>
 
-      {/* Stats row */}
-      <div className="grid grid-cols-3 lg:grid-cols-6 gap-3">
+      {/* ── Stats Row ── */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {stats.map((s, i) => (
-          <div key={i} className="px-4 py-3 rounded-2xl border text-center" style={{ background: SURFACE, borderColor: BORDER }}>
-            <div className="text-xl font-bold font-mono" style={{ color: s.color }}>{s.value}</div>
-            <div className="text-[9px] font-mono uppercase tracking-wider mt-0.5" style={{ color: DIM }}>{s.label}</div>
-          </div>
+          <Card key={i}>
+            <CardContent className={`p-4 flex flex-col items-center justify-center text-center`}>
+              <div className={`text-2xl font-bold font-mono ${s.color}`}>{s.value}</div>
+              <div className="text-[10px] font-semibold text-[var(--text-secondary)] uppercase tracking-wider mt-1">{s.label}</div>
+            </CardContent>
+          </Card>
         ))}
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3 px-4 py-3 rounded-2xl border" style={{ background: SURFACE, borderColor: BORDER }}>
-        <div className="flex items-center gap-2 flex-1 min-w-[180px]">
-          <Search style={{ width: 13, height: 13, color: DIM }} />
-          <input
-            className="bg-transparent flex-1 text-[11px] font-mono outline-none"
-            style={{ color: BRIGHT }}
-            placeholder="Search IOCs, tags, values..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
+      {/* ── Filters ── */}
+      <Card>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 border-b border-[var(--border)] bg-[var(--bg-surface)] rounded-t-[var(--radius-lg)]">
+          
+          {/* Search */}
+          <div className="flex items-center gap-2 flex-1 max-w-sm px-3 py-1.5 rounded-md border border-[var(--border)] bg-[var(--bg-inset)] focus-within:border-[var(--primary-dim)] transition-colors">
+            <Search className="w-4 h-4 text-[var(--text-muted)] shrink-0" />
+            <input
+              className="bg-transparent flex-1 text-sm text-[var(--text-primary)] outline-none placeholder-[var(--text-muted)]"
+              placeholder="Search IOCs, tags, values..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
+
+          {/* Type Pills */}
+          <div className="flex flex-wrap gap-2">
+            {['', 'ip', 'domain', 'hash', 'url', 'cve'].map(t => (
+              <button
+                key={t}
+                onClick={() => setSelectedType(t)}
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold uppercase tracking-wider transition-colors border ${
+                  selectedType === t 
+                    ? 'bg-[var(--primary-bg)] border-[var(--primary-ring)] text-[var(--primary)]' 
+                    : 'bg-[var(--bg-surface)] border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] hover:text-[var(--text-primary)]'
+                }`}
+              >
+                {t || 'ALL'}
+              </button>
+            ))}
+          </div>
+          
         </div>
-        <div className="flex gap-1.5 flex-wrap">
-          {['', 'ip', 'domain', 'hash', 'url', 'cve'].map(t => (
-            <button
-              key={t}
-              onClick={() => setSelectedType(t)}
-              className="px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase border transition-all cursor-pointer"
-              style={{
-                background: selectedType === t ? PRIMARY + '15' : 'transparent',
-                borderColor: selectedType === t ? PRIMARY + '50' : BORDER,
-                color: selectedType === t ? PRIMARY : MUTED,
-              }}
-            >
-              {t || 'ALL'}
-            </button>
-          ))}
-        </div>
-      </div>
 
-      {/* Indicator list */}
-      <div className="space-y-3">
-        {filtered.map((ind, i) => (
-          <motion.div key={ind.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
-            <div className="flex items-start gap-4 px-5 py-4 rounded-2xl border"
-              style={{ background: SURFACE, borderColor: BORDER, borderLeftWidth: 2, borderLeftColor: severityColor(ind.severity) }}>
+        {/* ── Indicator List ── */}
+        <div className="divide-y divide-[var(--border)]">
+          {filtered.map((ind, i) => {
+            const isCrit = ind.severity === 'critical';
+            const isHigh = ind.severity === 'high';
+            const sevColor = isCrit ? 'var(--danger)' : isHigh ? 'var(--warning)' : 'var(--primary)';
+            const sevBg = isCrit ? 'var(--danger-bg)' : isHigh ? 'var(--warning-bg)' : 'var(--primary-bg)';
+            const sevRing = isCrit ? 'var(--danger-ring)' : isHigh ? 'var(--warning-ring)' : 'var(--primary-ring)';
 
-              {/* Type icon */}
-              <div className="w-9 h-9 rounded-xl border flex items-center justify-center shrink-0"
-                style={{ background: '#040d1a', borderColor: BORDER, color: MUTED }}>
-                {TYPE_ICONS[ind.type]}
-              </div>
+            return (
+              <motion.div key={ind.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
+                <div className="flex flex-col md:flex-row md:items-start gap-4 p-5 bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] transition-colors relative group">
+                  
+                  {/* Left Border Accent */}
+                  <div 
+                    className="absolute left-0 top-0 bottom-0 w-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{ backgroundColor: sevColor }}
+                  />
 
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-4 mb-2">
-                  <code className="text-[12px] font-mono break-all" style={{ color: PRIMARY }}>{ind.value}</code>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-[9px] font-mono px-2 py-0.5 rounded border font-bold uppercase"
-                      style={{ color: severityColor(ind.severity), borderColor: severityColor(ind.severity) + '40', background: severityColor(ind.severity) + '12' }}>
-                      {ind.severity}
-                    </span>
-                    <span className="text-[9px] font-mono px-2 py-0.5 rounded border uppercase"
-                      style={{ color: MUTED, borderColor: BORDER }}>
-                      {ind.type}
-                    </span>
+                  {/* Icon */}
+                  <div className="w-10 h-10 rounded-lg border border-[var(--border)] bg-[var(--bg-inset)] flex items-center justify-center shrink-0 text-[var(--text-muted)]">
+                    {TYPE_ICONS[ind.type] || <Activity className="w-4 h-4" />}
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-3">
+                      <code className="text-sm font-bold font-mono text-[var(--primary)] break-all">{ind.value}</code>
+                      
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span 
+                          className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border"
+                          style={{ color: sevColor, backgroundColor: sevBg, borderColor: sevRing }}
+                        >
+                          {ind.severity}
+                        </span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border border-[var(--border)] text-[var(--text-muted)] bg-[var(--bg-inset)]">
+                          {ind.type}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {ind.description && (
+                      <p className="text-sm text-[var(--text-secondary)] mb-3 leading-relaxed">
+                        {ind.description}
+                      </p>
+                    )}
+                    
+                    <div className="flex flex-wrap items-center gap-2 mb-4">
+                      {ind.tags.map(tag => (
+                        <span key={tag} className="text-[10px] font-mono px-2 py-0.5 rounded border border-[var(--border)] text-[var(--text-muted)] bg-[var(--bg-inset)]">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                    
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 text-xs text-[var(--text-muted)] font-mono pt-3 border-t border-[var(--border)]">
+                      <span>Source: <span className="text-[var(--text-primary)] font-semibold ml-1">{ind.source}</span></span>
+                      <span>Confidence: <span className="text-[var(--primary)] font-semibold ml-1">{Math.round(ind.confidence * 100)}%</span></span>
+                      <span className="sm:ml-auto">Last Seen: <span className="text-[var(--text-primary)] ml-1">{formatDate(ind.last_seen, 'short')}</span></span>
+                    </div>
                   </div>
                 </div>
-                {ind.description && <p className="text-[11px] mb-2" style={{ color: MUTED }}>{ind.description}</p>}
-                <div className="flex items-center gap-2 flex-wrap mb-2">
-                  {ind.tags.map(tag => (
-                    <span key={tag} className="text-[9px] font-mono px-2 py-0.5 rounded border"
-                      style={{ borderColor: BORDER, color: MUTED }}>
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-                <div className="flex items-center gap-4 text-[10px] font-mono" style={{ color: DIM }}>
-                  <span>SOURCE: <span style={{ color: MUTED }}>{ind.source}</span></span>
-                  <span>CONFIDENCE: <span style={{ color: PRIMARY }}>{Math.round(ind.confidence * 100)}%</span></span>
-                  <span className="ml-auto">LAST SEEN: <span style={{ color: MUTED }}>{formatDate(ind.last_seen, 'short')}</span></span>
-                </div>
-              </div>
+              </motion.div>
+            )
+          })}
+          {filtered.length === 0 && (
+            <div className="p-8 text-center text-[var(--text-muted)] text-sm">
+              No IOCs found matching your criteria.
             </div>
-          </motion.div>
-        ))}
-      </div>
+          )}
+        </div>
+      </Card>
     </PageContainer>
   )
 }

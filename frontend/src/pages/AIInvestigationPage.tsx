@@ -4,16 +4,10 @@ import { useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Brain, Send, User, Bot, Sparkles, AlertTriangle, ChevronRight } from 'lucide-react'
 import { PageContainer } from '@/components/layout'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { aiService } from '@/services/ai.service'
-
-const PRIMARY = '#00D9B4'
-const DIM     = '#3d566e'
-const MUTED   = '#8FA3BF'
-const BRIGHT  = '#E2E8F0'
-const SURFACE = '#071022'
-const BORDER  = '#162030'
-const DANGER  = '#E75A43'
-const WARN    = '#FFB040'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 interface Message {
   id: string
@@ -46,69 +40,38 @@ The attacker followed a classic ransomware kill chain:
 
 The behavioral pattern is consistent with the **ALPHV/BlackCat** ransomware group, which is known for double extortion tactics.`
 
-function parseInlineBold(text: string) {
-  const parts = text.split(/\*\*(.*?)\*\*/g)
-  return parts.map((part, j) =>
-    j % 2 === 0 ? part : <strong key={j} style={{ color: BRIGHT }}>{part}</strong>
-  )
-}
-
 function FormattedContent({ content }: { content: string }) {
-  const lines = content.split('\n')
   return (
-    <div className="flex flex-col gap-1.5 text-[11px] leading-relaxed" style={{ color: MUTED }}>
-      {lines.map((line, i) => {
-        const trimmed = line.trim()
-        if (!trimmed) {
-          return <div key={i} className="h-2" />
-        }
-
-        // 1. Headers (e.g. ### Title or **Title**)
-        if (trimmed.startsWith('#')) {
-          const match = trimmed.match(/^(#{1,6})\s+(.*)$/)
-          if (match) {
-            const level = match[1].length
-            const text = match[2]
-            const sizeClass = level === 1 ? 'text-sm font-black' : level === 2 ? 'text-xs font-extrabold' : 'text-[11px] font-bold'
-            return (
-              <p key={i} className={`${sizeClass} font-mono mt-2 mb-1`} style={{ color: BRIGHT }}>
-                {parseInlineBold(text)}
-              </p>
+    <div className="text-sm leading-relaxed text-[var(--text-secondary)]">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          h1: ({ ...props }) => <h1 className="text-lg font-bold text-[var(--text-primary)] mt-4 mb-2" {...props} />,
+          h2: ({ ...props }) => <h2 className="text-base font-bold text-[var(--text-primary)] mt-4 mb-2" {...props} />,
+          h3: ({ ...props }) => <h3 className="text-sm font-bold text-[var(--text-primary)] mt-3 mb-1" {...props} />,
+          p: ({ ...props }) => <p className="mb-2 last:mb-0" {...props} />,
+          ul: ({ ...props }) => <ul className="list-disc pl-5 mb-2 space-y-1" {...props} />,
+          ol: ({ ...props }) => <ol className="list-decimal pl-5 mb-2 space-y-1" {...props} />,
+          li: ({ ...props }) => <li className="pl-1" {...props} />,
+          strong: ({ ...props }) => <strong className="font-semibold text-[var(--text-primary)]" {...props} />,
+          a: ({ ...props }) => <a className="text-[var(--primary)] hover:underline" target="_blank" rel="noopener noreferrer" {...props} />,
+          code: ({ inline, className, children, ...props }: any) => {
+            return inline ? (
+              <code className="bg-[var(--bg-surface)] text-[var(--text-primary)] px-1 py-0.5 rounded text-xs font-mono" {...props}>
+                {children}
+              </code>
+            ) : (
+              <pre className="bg-[var(--bg-surface)] p-3 rounded-md overflow-x-auto border border-[var(--border)] my-2">
+                <code className="text-xs font-mono text-[var(--text-primary)]" {...props}>
+                  {children}
+                </code>
+              </pre>
             )
           }
-        }
-
-        // 2. Unordered lists (- or *)
-        if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-          const text = trimmed.slice(2)
-          return (
-            <div key={i} className="flex gap-2 pl-3 items-start font-mono text-[10.5px]">
-              <span style={{ color: PRIMARY, userSelect: 'none' }}>•</span>
-              <span className="flex-1">{parseInlineBold(text)}</span>
-            </div>
-          )
-        }
-
-        // 3. Ordered lists (1. or 2.)
-        const numMatch = trimmed.match(/^(\d+)\.\s+(.*)$/)
-        if (numMatch) {
-          const num = numMatch[1]
-          const text = numMatch[2]
-          return (
-            <div key={i} className="flex gap-2 pl-3 items-start font-mono text-[10.5px]">
-              <span style={{ color: PRIMARY, userSelect: 'none' }}>{num}.</span>
-              <span className="flex-1">{parseInlineBold(text)}</span>
-            </div>
-          )
-        }
-
-        // 4. Standard Paragraph
-        return (
-          <p key={i}>
-            {parseInlineBold(line)}
-          </p>
-        )
-      })}
+        }}
+      >
+        {content}
+      </ReactMarkdown>
     </div>
   )
 }
@@ -157,22 +120,20 @@ export function AIInvestigationPage() {
   }
 
   return (
-    <PageContainer>
-      {/* Page header */}
+    <PageContainer className="flex flex-col gap-6">
+      
+      {/* ── Header ── */}
       <div>
-        <div className="text-[9px] font-mono uppercase tracking-[0.15em] mb-1" style={{ color: DIM }}>Autonomous Analysis Engine</div>
-        <h1 className="text-xl font-bold font-mono" style={{ color: BRIGHT }}>AI Investigation</h1>
-        <p className="text-[11px] font-mono mt-0.5" style={{ color: MUTED }}>Intelligent threat analysis powered by RAG-enhanced AI</p>
+        <h1 className="text-xl font-semibold text-[var(--text-primary)]">AI Investigation</h1>
+        <p className="text-[var(--text-muted)] mt-1">Intelligent threat analysis powered by RAG-enhanced AI.</p>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-5" style={{ height: 'calc(100vh - 280px)', minHeight: 500 }}>
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6" style={{ height: 'calc(100vh - 160px)', minHeight: 600 }}>
 
-        {/* Chat area */}
-        <div className="xl:col-span-3 flex flex-col min-h-0 rounded-2xl border overflow-hidden"
-          style={{ background: SURFACE, borderColor: BORDER }}>
-
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-4 min-h-0">
+        {/* ── Chat Area (75%) ── */}
+        <Card className="xl:col-span-3 flex flex-col min-h-0">
+          
+          <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6 min-h-0">
             <AnimatePresence initial={false}>
               {messages.map(msg => (
                 <motion.div
@@ -180,59 +141,64 @@ export function AIInvestigationPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.2 }}
-                  className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
+                  className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
                 >
                   {/* Avatar */}
-                  <div className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0 border"
-                    style={{
-                      background: msg.role === 'assistant' ? PRIMARY + '15' : '#0c1828',
-                      borderColor: msg.role === 'assistant' ? PRIMARY + '30' : BORDER,
-                    }}>
+                  <div 
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${
+                      msg.role === 'assistant' 
+                        ? 'bg-[var(--primary-bg)] border-[var(--primary-ring)]' 
+                        : 'bg-[var(--bg-inset)] border-[var(--border)]'
+                    }`}
+                  >
                     {msg.role === 'assistant'
-                      ? <Bot style={{ width: 14, height: 14, color: PRIMARY }} />
-                      : <User style={{ width: 14, height: 14, color: MUTED }} />
+                      ? <Bot className="w-4 h-4 text-[var(--primary)]" />
+                      : <User className="w-4 h-4 text-[var(--text-muted)]" />
                     }
                   </div>
 
                   {/* Bubble */}
-                  <div className={`flex flex-col gap-1 max-w-[80%] ${msg.role === 'user' ? 'items-end' : ''}`}>
-                    <div className="rounded-xl px-4 py-3 border"
-                      style={{
-                        background: msg.role === 'user' ? PRIMARY + '10' : '#040d1a',
-                        borderColor: msg.role === 'user' ? PRIMARY + '20' : BORDER,
-                      }}>
+                  <div className={`flex flex-col gap-2 max-w-[80%] ${msg.role === 'user' ? 'items-end' : ''}`}>
+                    <div 
+                      className={`rounded-xl px-5 py-4 border ${
+                        msg.role === 'user' 
+                          ? 'bg-[var(--primary-bg)] border-[var(--primary-ring)] rounded-tr-sm' 
+                          : 'bg-[var(--bg-inset)] border-[var(--border)] rounded-tl-sm'
+                      }`}
+                    >
                       <FormattedContent content={msg.content} />
                     </div>
                     {msg.sources && msg.sources.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
+                      <div className="flex flex-wrap gap-2 mt-1">
                         {msg.sources.map(s => (
-                          <span key={s} className="text-[9px] font-mono px-2 py-0.5 rounded border"
-                            style={{ color: MUTED, borderColor: BORDER }}>
+                          <span 
+                            key={s} 
+                            className="text-[10px] font-mono px-2 py-0.5 rounded-md border border-[var(--border)] bg-[var(--bg-inset)] text-[var(--text-muted)]"
+                          >
                             {s}
                           </span>
                         ))}
                       </div>
                     )}
-                    <span className="text-[9px] font-mono" style={{ color: DIM }}>
-                      {msg.timestamp.toLocaleTimeString('en-GB')}
+                    <span className="text-[10px] font-mono text-[var(--text-muted)] mt-1">
+                      {msg.timestamp.toLocaleTimeString()}
                     </span>
                   </div>
                 </motion.div>
               ))}
             </AnimatePresence>
 
-            {/* Typing indicator */}
+            {/* Typing Indicator */}
             {loading && (
-              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="flex gap-3">
-                <div className="w-7 h-7 rounded-xl border flex items-center justify-center"
-                  style={{ background: PRIMARY + '15', borderColor: PRIMARY + '30' }}>
-                  <Bot style={{ width: 14, height: 14, color: PRIMARY }} />
+              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="flex gap-4">
+                <div className="w-8 h-8 rounded-lg border border-[var(--primary-ring)] bg-[var(--primary-bg)] flex items-center justify-center shrink-0">
+                  <Bot className="w-4 h-4 text-[var(--primary)]" />
                 </div>
-                <div className="rounded-xl px-4 py-3 border flex items-center gap-1.5"
-                  style={{ background: '#040d1a', borderColor: BORDER }}>
+                <div className="rounded-xl px-5 py-4 border border-[var(--border)] bg-[var(--bg-inset)] rounded-tl-sm flex items-center gap-2">
                   {[0, 1, 2].map(i => (
-                    <motion.span key={i} className="w-1.5 h-1.5 rounded-full"
-                      style={{ background: PRIMARY }}
+                    <motion.span 
+                      key={i} 
+                      className="w-1.5 h-1.5 rounded-full bg-[var(--primary)]"
                       animate={{ opacity: [0.3, 1, 0.3] }}
                       transition={{ duration: 1, repeat: Infinity, delay: i * 0.15 }}
                     />
@@ -243,78 +209,82 @@ export function AIInvestigationPage() {
             <div ref={bottomRef} />
           </div>
 
-          {/* Starter prompts */}
+          {/* Starter Prompts */}
           {messages.length === 1 && (
-            <div className="px-5 pb-3 flex flex-wrap gap-2">
+            <div className="px-6 pb-4 flex flex-wrap gap-2">
               {STARTER_PROMPTS.map(p => (
-                <button key={p} onClick={() => sendMessage(p)}
-                  className="text-[10px] font-mono px-3 py-1.5 rounded-lg border flex items-center gap-1 cursor-pointer transition-all"
-                  style={{ borderColor: BORDER, color: MUTED }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = PRIMARY + '40'; (e.currentTarget as HTMLButtonElement).style.color = PRIMARY }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = BORDER; (e.currentTarget as HTMLButtonElement).style.color = MUTED }}
+                <button 
+                  key={p} 
+                  onClick={() => sendMessage(p)}
+                  className="text-xs px-3 py-1.5 rounded-md border border-[var(--border)] bg-[var(--bg-inset)] hover:border-[var(--primary-dim)] hover:text-[var(--primary)] text-[var(--text-secondary)] flex items-center gap-1.5 transition-colors"
                 >
-                  <ChevronRight style={{ width: 11, height: 11 }} />
+                  <ChevronRight className="w-3 h-3" />
                   {p}
                 </button>
               ))}
             </div>
           )}
 
-          {/* Input */}
-          <div className="p-4 border-t" style={{ borderColor: BORDER }}>
-            <form onSubmit={e => { e.preventDefault(); sendMessage(input) }} className="flex gap-2">
+          {/* Input Area */}
+          <div className="p-4 border-t border-[var(--border)] bg-[var(--bg-surface)]">
+            <form onSubmit={e => { e.preventDefault(); sendMessage(input) }} className="flex gap-3">
               <input
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 placeholder="Ask about this incident, techniques, or threat actors..."
                 disabled={loading}
-                className="flex-1 px-4 py-2.5 rounded-xl border text-[11px] font-mono outline-none"
-                style={{ background: '#040d1a', borderColor: BORDER, color: BRIGHT }}
-                onFocus={e => { e.currentTarget.style.borderColor = PRIMARY + '60' }}
-                onBlur={e => { e.currentTarget.style.borderColor = BORDER }}
+                className="flex-1 px-4 py-3 rounded-lg border border-[var(--border)] bg-[var(--bg-inset)] text-sm text-[var(--text-primary)] outline-none focus:border-[var(--primary-dim)] transition-colors placeholder-[var(--text-muted)]"
               />
-              <button type="submit" disabled={!input.trim() || loading}
-                className="w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer"
-                style={{ background: input.trim() ? PRIMARY : BORDER, color: input.trim() ? '#020814' : DIM }}>
-                <Send style={{ width: 15, height: 15 }} />
+              <button 
+                type="submit" 
+                disabled={!input.trim() || loading}
+                className={`w-12 rounded-lg flex items-center justify-center transition-colors ${
+                  input.trim() 
+                    ? 'bg-[var(--primary)] text-[var(--bg-base)] hover:brightness-110' 
+                    : 'bg-[var(--bg-inset)] text-[var(--text-muted)] border border-[var(--border)]'
+                }`}
+              >
+                <Send className="w-4 h-4" />
               </button>
             </form>
           </div>
-        </div>
+        </Card>
 
-        {/* Right side panel */}
-        <div className="flex flex-col gap-4">
-          {/* Capabilities */}
-          <div className="rounded-2xl border p-4" style={{ background: SURFACE, borderColor: BORDER }}>
-            <div className="flex items-center gap-2 mb-3">
-              <Brain style={{ width: 14, height: 14, color: PRIMARY }} />
-              <span className="text-[10px] font-mono uppercase tracking-widest" style={{ color: BRIGHT }}>AI Capabilities</span>
-            </div>
-            <div className="space-y-3">
+        {/* ── Context Panel (25%) ── */}
+        <div className="flex flex-col gap-6">
+          
+          <Card>
+            <CardHeader className="pb-3 border-b border-[var(--border)]">
+              <CardTitle className="flex items-center gap-2">
+                <Brain className="w-4 h-4 text-[var(--primary)]" />
+                AI Capabilities
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-4 flex flex-col gap-4">
               {[
-                { icon: AlertTriangle, color: DANGER, label: 'Threat Correlation', desc: 'Links events across sources' },
-                { icon: Sparkles,      color: PRIMARY, label: 'MITRE Mapping',      desc: 'Maps to ATT&CK framework'  },
-                { icon: Brain,         color: WARN,    label: 'Attack Prediction',  desc: 'Forecasts next moves'       },
-                { icon: Bot,           color: PRIMARY, label: 'RAG Knowledge',      desc: 'MITRE, CVEs, threat intel'  },
-              ].map(({ icon: Icon, color, label, desc }) => (
-                <div key={label} className="flex items-start gap-2.5">
-                  <div className="mt-0.5 w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
-                    style={{ background: color + '15' }}>
-                    <Icon style={{ width: 12, height: 12, color }} />
+                { icon: AlertTriangle, color: 'text-[var(--danger)]', bg: 'bg-[var(--danger-bg)]', border: 'border-[var(--danger-ring)]', label: 'Threat Correlation', desc: 'Links events across sources' },
+                { icon: Sparkles, color: 'text-[var(--primary)]', bg: 'bg-[var(--primary-bg)]', border: 'border-[var(--primary-ring)]', label: 'MITRE Mapping', desc: 'Maps to ATT&CK framework' },
+                { icon: Brain, color: 'text-[var(--warning)]', bg: 'bg-[var(--warning-bg)]', border: 'border-[var(--warning-ring)]', label: 'Attack Prediction', desc: 'Forecasts next moves' },
+                { icon: Bot, color: 'text-[var(--primary)]', bg: 'bg-[var(--primary-bg)]', border: 'border-[var(--primary-ring)]', label: 'RAG Knowledge', desc: 'MITRE, CVEs, threat intel' },
+              ].map(({ icon: Icon, color, bg, border, label, desc }) => (
+                <div key={label} className="flex items-start gap-3">
+                  <div className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 border ${bg} ${border}`}>
+                    <Icon className={`w-4 h-4 ${color}`} />
                   </div>
                   <div>
-                    <div className="text-[11px] font-mono" style={{ color: BRIGHT }}>{label}</div>
-                    <div className="text-[10px] font-mono" style={{ color: DIM }}>{desc}</div>
+                    <div className="text-xs font-semibold text-[var(--text-primary)]">{label}</div>
+                    <div className="text-[11px] text-[var(--text-muted)] mt-0.5">{desc}</div>
                   </div>
                 </div>
               ))}
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
-          {/* Knowledge Sources */}
-          <div className="rounded-2xl border p-4" style={{ background: SURFACE, borderColor: BORDER }}>
-            <div className="text-[9px] font-mono uppercase tracking-widest mb-3" style={{ color: DIM }}>Knowledge Sources</div>
-            <div className="space-y-2">
+          <Card>
+            <CardHeader className="pb-3 border-b border-[var(--border)]">
+              <CardTitle>Knowledge Sources</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-4 flex flex-col gap-2.5">
               {[
                 'MITRE ATT&CK v14',
                 'CVE Database 2024',
@@ -322,14 +292,16 @@ export function AIInvestigationPage() {
                 'OWASP Top 10',
                 'Internal Incident History',
               ].map(source => (
-                <div key={source} className="flex items-center gap-2 text-[10px] font-mono" style={{ color: MUTED }}>
-                  <div className="w-1.5 h-1.5 rounded-full" style={{ background: PRIMARY }} />
+                <div key={source} className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[var(--primary)]" />
                   {source}
                 </div>
               ))}
-            </div>
-          </div>
+            </CardContent>
+          </Card>
+          
         </div>
+
       </div>
     </PageContainer>
   )
