@@ -56,7 +56,8 @@ function FormattedContent({ content }: { content: string }) {
           strong: ({ ...props }) => <strong className="font-semibold text-[var(--text-primary)]" {...props} />,
           a: ({ ...props }) => <a className="text-[var(--primary)] hover:underline" target="_blank" rel="noopener noreferrer" {...props} />,
           pre: ({ ...props }) => <pre className="bg-[var(--bg-surface)] p-3 rounded-md overflow-x-auto border border-[var(--border)] my-2" {...props} />,
-          code: ({ node: _, className, children, ...props }) => {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          code: ({ node, className, children, ...props }) => {
             const isInline = !className || !className.includes('language-');
             return (
               <code 
