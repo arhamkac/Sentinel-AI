@@ -2,12 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status, Background
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional, List
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from app.db.session import get_db
 from app.core.dependencies import get_current_active_user
 from app.models.user import User
 from app.models.incident import Incident
+from app.models.event import SecurityEvent
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -166,6 +167,99 @@ async def list_incidents(
         )
         db.add(demo_incident)
         await db.flush()
+
+        # Seed events for the demo incident
+        demo_events = [
+            SecurityEvent(
+                event_type="endpoint",
+                severity="low",
+                hostname="WS-07",
+                user="r.sharma",
+                process="excel.exe",
+                description="Spear-phishing email attachment macro execution detected on analyst workstation.",
+                raw_data={"attachment": "Q4_Report_CNI.xlsm", "spawned_process": "cmd.exe"},
+                mitre_technique_id="T1566.001",
+                mitre_technique_name="Phishing: Spearphishing Attachment",
+                anomaly_score=0.25,
+                incident_id=demo_incident.id,
+                organization_id=current_user.organization_id,
+                is_simulated=True,
+                timestamp=datetime.now(timezone.utc) - timedelta(minutes=5)
+            ),
+            SecurityEvent(
+                event_type="network",
+                severity="medium",
+                hostname="WS-07",
+                user="r.sharma",
+                process="powershell.exe",
+                description="PowerShell outbound connection to known malicious C2 hosting server.",
+                source_ip="10.0.4.7",
+                destination_ip="185.220.101.4",
+                source_port=49201,
+                destination_port=443,
+                raw_data={"command_line": "powershell.exe -ExecutionPolicy Bypass -File C:\\Users\\r.sharma\\AppData\\Local\\Temp\\update.ps1"},
+                mitre_technique_id="T1059.001",
+                mitre_technique_name="Command and Scripting Interpreter: PowerShell",
+                anomaly_score=0.48,
+                incident_id=demo_incident.id,
+                organization_id=current_user.organization_id,
+                is_simulated=True,
+                timestamp=datetime.now(timezone.utc) - timedelta(minutes=4)
+            ),
+            SecurityEvent(
+                event_type="endpoint",
+                severity="high",
+                hostname="WS-07",
+                user="SYSTEM",
+                process="vssadmin.exe",
+                description="Attempt to dump local credentials and disable Volume Shadow Copies on workstation WS-07.",
+                raw_data={"command_line": "vssadmin.exe delete shadows /all /quiet"},
+                mitre_technique_id="T1490",
+                mitre_technique_name="Inhibit System Recovery",
+                anomaly_score=0.78,
+                incident_id=demo_incident.id,
+                organization_id=current_user.organization_id,
+                is_simulated=True,
+                timestamp=datetime.now(timezone.utc) - timedelta(minutes=3)
+            ),
+            SecurityEvent(
+                event_type="endpoint",
+                severity="high",
+                hostname="SCADA-WS-02",
+                user="scada_admin",
+                process="mstsc.exe",
+                description="Analyst workstation established RDP remote access to SCADA control workstation.",
+                source_ip="10.0.4.7",
+                destination_ip="10.0.10.12",
+                source_port=49352,
+                destination_port=3389,
+                mitre_technique_id="T1021.001",
+                mitre_technique_name="Remote Services: Remote Desktop Protocol",
+                anomaly_score=0.85,
+                incident_id=demo_incident.id,
+                organization_id=current_user.organization_id,
+                is_simulated=True,
+                timestamp=datetime.now(timezone.utc) - timedelta(minutes=2)
+            ),
+            SecurityEvent(
+                event_type="scada",
+                severity="critical",
+                hostname="breaker-4",
+                description="Substation Breaker #4 forced trip status changed to open due to frequency anomaly.",
+                raw_data={"breaker_status": "tripped", "line_frequency": "50.02 Hz", "phase_drift": "0.85"},
+                mitre_technique_id="T0855",
+                mitre_technique_name="Unauthorized Command Message",
+                anomaly_score=0.96,
+                incident_id=demo_incident.id,
+                organization_id=current_user.organization_id,
+                is_simulated=True,
+                timestamp=datetime.now(timezone.utc) - timedelta(minutes=1)
+            ),
+        ]
+
+        for event in demo_events:
+            db.add(event)
+
         await db.commit()
 
     # Get total count matching conditions

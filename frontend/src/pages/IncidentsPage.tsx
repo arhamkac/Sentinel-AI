@@ -87,7 +87,7 @@ export function IncidentsPage() {
 
       {/* ── Filters & List ── */}
       <Card>
-        <div className="flex flex-wrap items-center gap-4 p-4 border-b border-[var(--border)] bg-[var(--bg-surface)] rounded-t-[var(--radius-lg)]">
+        <div className="flex flex-wrap items-center gap-4 border-b border-[var(--border)] bg-[var(--bg-surface)] rounded-t-[var(--radius-lg)]" style={{ padding: '16px' }}>
           <div className="flex items-center gap-2 flex-1 min-w-[240px] px-3 py-1.5 rounded-md border border-[var(--border)] bg-[var(--bg-inset)] focus-within:border-[var(--primary-dim)] transition-colors">
             <Search className="w-4 h-4 text-[var(--text-muted)]" />
             <input
@@ -119,7 +119,7 @@ export function IncidentsPage() {
               <div key={i} className="h-20 bg-[var(--bg-inset)] animate-pulse m-4 rounded-md" />
             ))
           ) : filtered.length === 0 ? (
-            <div className="p-4">
+            <div style={{ padding: '16px' }}>
               <EmptyState
                 title="No incidents found"
                 description="No incidents matched your query. Try broadening your filters."
@@ -134,7 +134,8 @@ export function IncidentsPage() {
                 <Link 
                   key={incident.id} 
                   to={`/incidents/${incident.id}`}
-                  className="block p-4 bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] transition-colors group relative"
+                  className="block bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] transition-colors group relative border-b border-[var(--border)] last:border-0"
+                  style={{ padding: '16px' }}
                 >
                   <div 
                     className="absolute left-0 top-0 bottom-0 w-1 opacity-0 group-hover:opacity-100 transition-opacity" 
@@ -157,7 +158,7 @@ export function IncidentsPage() {
                           {incident.status.replace('_', ' ')}
                         </span>
                         <span className="text-[10px] font-mono text-[var(--text-muted)] bg-[var(--bg-inset)] px-1.5 py-0.5 rounded border border-[var(--border)]">
-                          {incident.id}
+                          {incident.id.includes('-') && incident.id.length > 20 ? `#${incident.id.split('-')[0].toUpperCase()}` : incident.id}
                         </span>
                       </div>
                       <h3 className="text-sm font-semibold text-[var(--text-primary)] truncate mb-1">
@@ -173,7 +174,7 @@ export function IncidentsPage() {
                         {new Date(incident.created_at).toLocaleTimeString()} · {new Date(incident.created_at).toLocaleDateString()}
                       </div>
                       <div className="text-[11px] text-[var(--text-muted)] mt-1">
-                        <span className="font-medium">Assets:</span> {incident.affected_assets.join(', ')}
+                        <span className="font-medium">Assets:</span> {incident.affected_assets?.map(a => typeof a === 'string' ? a : (a as any).hostname || (a as any).name || (a as any).id || 'Unknown').join(', ') || 'None'}
                       </div>
                       <div className="text-[11px] text-[var(--text-muted)]">
                         <span className="font-medium">Events:</span> {incident.event_count}

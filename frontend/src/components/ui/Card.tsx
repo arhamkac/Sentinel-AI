@@ -31,8 +31,8 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
 Card.displayName = 'Card'
 
 const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn('flex flex-col gap-1 p-6 pb-0', className)} {...props} />
+  ({ className, style, ...props }, ref) => (
+    <div ref={ref} className={cn('flex flex-col gap-1 p-6 pb-0', className)} style={{ padding: '24px', paddingBottom: 0, ...style }} {...props} />
   )
 )
 CardHeader.displayName = 'CardHeader'
@@ -56,15 +56,15 @@ const CardDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttribu
 CardDescription.displayName = 'CardDescription'
 
 const CardContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn('p-6 pt-5', className)} {...props} />
+  ({ className, style, ...props }, ref) => (
+    <div ref={ref} className={cn('p-6 pt-5', className)} style={{ padding: '24px', paddingTop: '20px', ...style }} {...props} />
   )
 )
 CardContent.displayName = 'CardContent'
 
 const CardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn('flex items-center p-6 pt-0', className)} {...props} />
+  ({ className, style, ...props }, ref) => (
+    <div ref={ref} className={cn('flex items-center p-6 pt-0', className)} style={{ padding: '24px', paddingTop: 0, ...style }} {...props} />
   )
 )
 CardFooter.displayName = 'CardFooter'

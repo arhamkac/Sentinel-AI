@@ -54,6 +54,7 @@ async def list_events(
     severity: Optional[str] = None,
     event_type: Optional[str] = None,
     search: Optional[str] = None,
+    incident_id: Optional[str] = None,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -63,6 +64,8 @@ async def list_events(
         query = query.where(SecurityEvent.severity == severity)
     if event_type:
         query = query.where(SecurityEvent.event_type == event_type)
+    if incident_id:
+        query = query.where(SecurityEvent.incident_id == incident_id)
     if search:
         query = query.where(SecurityEvent.description.ilike(f"%{search}%") | SecurityEvent.hostname.ilike(f"%{search}%"))
 

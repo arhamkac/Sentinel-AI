@@ -8,7 +8,7 @@ import ReactFlow, {
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 import { motion } from 'framer-motion'
-import { GitBranch, AlertTriangle, Monitor, User, Network, Target, Skull, Cpu } from 'lucide-react'
+import { GitBranch, AlertTriangle, Monitor, User, Network, Target, Skull, Cpu, BookOpen, Shield, Key, ArrowRight } from 'lucide-react'
 import { PageHeader } from '@/components/common'
 import { PageContainer } from '@/components/layout'
 import { Card, CardContent } from '@/components/ui/Card'
@@ -53,8 +53,9 @@ function NodeContainer({
 
       {/* Main Node Card */}
       <div
-        className="px-4 py-3 rounded-xl border flex flex-col justify-center min-w-[200px] max-w-[240px] transition-all bg-[var(--bg-surface)] shadow-md"
+        className="rounded-xl border flex flex-col justify-center min-w-[200px] max-w-[240px] transition-all bg-[var(--bg-surface)] shadow-md"
         style={{
+          padding: '12px 16px',
           borderColor: `var(--border)`,
           borderLeft: `4px solid var(--${colorVar})`,
         }}
@@ -278,10 +279,10 @@ export function AttackGraphPage() {
 
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
         
-        {/* ── Graph ── */}
-        <motion.div
-          className="xl:col-span-3"
-          initial={{ opacity: 0, scale: 0.98 }}
+        {/* ── Graph & Narrative ── */}
+        <div className="xl:col-span-3 flex flex-col gap-6">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.3 }}
         >
@@ -295,10 +296,9 @@ export function AttackGraphPage() {
                 nodes={nodes}
                 edges={edges}
                 nodeTypes={nodeTypes}
-                fitView
-                fitViewOptions={{ padding: 0.2 }}
-                minZoom={0.1}
-                maxZoom={1.5}
+                defaultViewport={{ x: 100, y: 80, zoom: 0.85 }}
+                minZoom={0.4}
+                maxZoom={2}
                 proOptions={{ hideAttribution: true }}
               >
                 <Background color="var(--border)" gap={24} size={1} />
@@ -314,7 +314,90 @@ export function AttackGraphPage() {
               </ReactFlow>
             )}
           </div>
-        </motion.div>
+          </motion.div>
+
+          {/* ── Attack Narrative ── */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+          >
+            <Card>
+              <div className="border-b border-[var(--border)]" style={{ padding: '24px' }}>
+                <div className="flex items-center gap-2">
+                  <BookOpen className="w-5 h-5 text-[var(--primary)]" />
+                  <h2 className="text-lg font-semibold text-[var(--text-primary)]">Attack Narrative</h2>
+                </div>
+                <p className="text-sm text-[var(--text-muted)] mt-1">A plain-English breakdown of how this attack unfolded across the network.</p>
+              </div>
+              <CardContent className="p-0" style={{ padding: 0 }}>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-[var(--border)]">
+                  
+                  {/* Phase 1 */}
+                  <div className="flex flex-col gap-3 hover:bg-[var(--bg-hover)] transition-colors" style={{ padding: '24px' }}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[var(--warning-bg)] text-[var(--warning)] text-xs font-bold font-mono">1</span>
+                      <h3 className="text-base font-semibold text-[var(--text-primary)]">Initial Access</h3>
+                    </div>
+                    <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+                      The attack started with the user account <span className="text-[var(--text-primary)] font-mono bg-[var(--bg-inset)] px-1 rounded">john.doe@corp.com</span>. They received a malicious spear-phishing email.
+                    </p>
+                    <div className="mt-auto pt-3 flex items-center gap-2 text-[11px] text-[var(--text-muted)] font-mono">
+                      <Shield className="w-3.5 h-3.5 text-[var(--danger)]" />
+                      <span>Compromised: WS-07</span>
+                    </div>
+                  </div>
+
+                  {/* Phase 2 */}
+                  <div className="flex flex-col gap-3 hover:bg-[var(--bg-hover)] transition-colors" style={{ padding: '24px' }}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[var(--primary-bg)] text-[var(--primary)] text-xs font-bold font-mono">2</span>
+                      <h3 className="text-base font-semibold text-[var(--text-primary)]">Execution & Escalation</h3>
+                    </div>
+                    <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+                      Once inside <span className="font-mono text-[var(--text-primary)]">WS-07</span>, the attacker used PowerShell to run malicious code in the background, allowing them to dump credentials from LSASS memory.
+                    </p>
+                    <div className="mt-auto pt-3 flex items-center gap-2 text-[11px] text-[var(--text-muted)] font-mono">
+                      <Key className="w-3.5 h-3.5 text-[var(--warning)]" />
+                      <span>Stolen: Admin Passwords</span>
+                    </div>
+                  </div>
+
+                  {/* Phase 3 */}
+                  <div className="flex flex-col gap-3 hover:bg-[var(--bg-hover)] transition-colors" style={{ padding: '24px' }}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[var(--info-bg)] text-[var(--info)] text-xs font-bold font-mono">3</span>
+                      <h3 className="text-base font-semibold text-[var(--text-primary)]">Lateral Movement</h3>
+                    </div>
+                    <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+                      Using the stolen administrator passwords, the attacker abandoned the workstation and moved deeper into the network to the Domain Controller via RDP.
+                    </p>
+                    <div className="mt-auto pt-3 flex items-center gap-2 text-[11px] text-[var(--text-muted)] font-mono">
+                      <ArrowRight className="w-3.5 h-3.5 text-[var(--primary)]" />
+                      <span>Pivot: DC-01</span>
+                    </div>
+                  </div>
+
+                  {/* Phase 4 */}
+                  <div className="flex flex-col gap-3 hover:bg-[var(--bg-hover)] transition-colors" style={{ padding: '24px' }}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[var(--danger-bg)] text-[var(--danger)] text-xs font-bold font-mono">4</span>
+                      <h3 className="text-base font-semibold text-[var(--text-primary)]">The Final Objective</h3>
+                    </div>
+                    <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+                      Once in control of the Domain Controller, their first action was to delete Shadow Copies (destroying backups). Finally, they deployed the Ransomware payload.
+                    </p>
+                    <div className="mt-auto pt-3 flex items-center gap-2 text-[11px] text-[var(--text-muted)] font-mono">
+                      <Target className="w-3.5 h-3.5 text-[var(--danger)]" />
+                      <span>Impact: Ransomware</span>
+                    </div>
+                  </div>
+
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
 
         {/* ── Legend / Summary ── */}
         <div className="flex flex-col gap-6">

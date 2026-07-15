@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/purity */
 import { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -42,13 +43,13 @@ The behavioral pattern is consistent with the **ALPHV/BlackCat** ransomware grou
 
 function FormattedContent({ content }: { content: string }) {
   return (
-    <div className="text-sm leading-relaxed text-[var(--text-secondary)]">
+    <div className="text-base leading-relaxed text-[var(--text-secondary)]">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
-          h1: ({ ...props }) => <h1 className="text-lg font-bold text-[var(--text-primary)] mt-4 mb-2" {...props} />,
-          h2: ({ ...props }) => <h2 className="text-base font-bold text-[var(--text-primary)] mt-4 mb-2" {...props} />,
-          h3: ({ ...props }) => <h3 className="text-sm font-bold text-[var(--text-primary)] mt-3 mb-1" {...props} />,
+          h1: ({ ...props }) => <h1 className="text-xl font-bold text-[var(--text-primary)] mt-4 mb-2" {...props} />,
+          h2: ({ ...props }) => <h2 className="text-lg font-bold text-[var(--text-primary)] mt-4 mb-2" {...props} />,
+          h3: ({ ...props }) => <h3 className="text-base font-bold text-[var(--text-primary)] mt-3 mb-1" {...props} />,
           p: ({ ...props }) => <p className="mb-2 last:mb-0" {...props} />,
           ul: ({ ...props }) => <ul className="list-disc pl-5 mb-2 space-y-1" {...props} />,
           ol: ({ ...props }) => <ol className="list-decimal pl-5 mb-2 space-y-1" {...props} />,
@@ -61,7 +62,7 @@ function FormattedContent({ content }: { content: string }) {
             const isInline = !className || !className.includes('language-');
             return (
               <code 
-                className={`${className || ''} ${isInline ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] px-1 py-0.5 rounded text-xs font-mono' : 'text-xs font-mono text-[var(--text-primary)]'}`} 
+                className={`${className || ''} ${isInline ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] px-1 py-0.5 rounded text-sm font-mono' : 'text-sm font-mono text-[var(--text-primary)]'}`} 
                 {...props}
               >
                 {children}
@@ -141,7 +142,7 @@ export function AIInvestigationPage() {
         {/* ── Chat Area (75%) ── */}
         <Card className="xl:col-span-3 flex flex-col min-h-0">
           
-          <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6 min-h-0">
+          <div className="flex-1 overflow-y-auto flex flex-col min-h-0" style={{ padding: '24px', gap: '24px' }}>
             <AnimatePresence initial={false}>
               {messages.map(msg => (
                 <motion.div
@@ -149,7 +150,8 @@ export function AIInvestigationPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.2 }}
-                  className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
+                  className={`flex ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
+                  style={{ gap: '16px' }}
                 >
                   {/* Avatar */}
                   <div 
@@ -168,11 +170,12 @@ export function AIInvestigationPage() {
                   {/* Bubble */}
                   <div className={`flex flex-col gap-2 max-w-[80%] ${msg.role === 'user' ? 'items-end' : ''}`}>
                     <div 
-                      className={`rounded-xl px-5 py-4 border ${
+                      className={`rounded-xl border ${
                         msg.role === 'user' 
                           ? 'bg-[var(--primary-bg)] border-[var(--primary-ring)] rounded-tr-sm' 
                           : 'bg-[var(--bg-inset)] border-[var(--border)] rounded-tl-sm'
                       }`}
+                      style={{ padding: '16px 20px' }}
                     >
                       <FormattedContent content={msg.content} />
                     </div>
@@ -181,14 +184,14 @@ export function AIInvestigationPage() {
                         {msg.sources.map(s => (
                           <span 
                             key={s} 
-                            className="text-[10px] font-mono px-2 py-0.5 rounded-md border border-[var(--border)] bg-[var(--bg-inset)] text-[var(--text-muted)]"
+                            className="text-xs font-mono px-2 py-0.5 rounded-md border border-[var(--border)] bg-[var(--bg-inset)] text-[var(--text-muted)]"
                           >
                             {s}
                           </span>
                         ))}
                       </div>
                     )}
-                    <span className="text-[10px] font-mono text-[var(--text-muted)] mt-1">
+                    <span className="text-xs font-mono text-[var(--text-muted)] mt-1">
                       {msg.timestamp.toLocaleTimeString()}
                     </span>
                   </div>
@@ -198,11 +201,11 @@ export function AIInvestigationPage() {
 
             {/* Typing Indicator */}
             {loading && (
-              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="flex gap-4">
+              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="flex" style={{ gap: '16px' }}>
                 <div className="w-8 h-8 rounded-lg border border-[var(--primary-ring)] bg-[var(--primary-bg)] flex items-center justify-center shrink-0">
                   <Bot className="w-4 h-4 text-[var(--primary)]" />
                 </div>
-                <div className="rounded-xl px-5 py-4 border border-[var(--border)] bg-[var(--bg-inset)] rounded-tl-sm flex items-center gap-2">
+                <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-inset)] rounded-tl-sm flex items-center" style={{ padding: '16px 20px', gap: '8px' }}>
                   {[0, 1, 2].map(i => (
                     <motion.span 
                       key={i} 
@@ -219,12 +222,12 @@ export function AIInvestigationPage() {
 
           {/* Starter Prompts */}
           {messages.length === 1 && (
-            <div className="px-6 pb-4 flex flex-wrap gap-2">
+            <div className="flex flex-wrap" style={{ padding: '0 24px 16px 24px', gap: '8px' }}>
               {STARTER_PROMPTS.map(p => (
                 <button 
                   key={p} 
                   onClick={() => sendMessage(p)}
-                  className="text-xs px-3 py-1.5 rounded-md border border-[var(--border)] bg-[var(--bg-inset)] hover:border-[var(--primary-dim)] hover:text-[var(--primary)] text-[var(--text-secondary)] flex items-center gap-1.5 transition-colors"
+                  className="text-sm px-3 py-1.5 rounded-md border border-[var(--border)] bg-[var(--bg-inset)] hover:border-[var(--primary-dim)] hover:text-[var(--primary)] text-[var(--text-secondary)] flex items-center gap-1.5 transition-colors"
                 >
                   <ChevronRight className="w-3 h-3" />
                   {p}
@@ -234,14 +237,14 @@ export function AIInvestigationPage() {
           )}
 
           {/* Input Area */}
-          <div className="p-4 border-t border-[var(--border)] bg-[var(--bg-surface)]">
+          <div className="border-t border-[var(--border)] bg-[var(--bg-surface)]" style={{ padding: '16px' }}>
             <form onSubmit={e => { e.preventDefault(); sendMessage(input) }} className="flex gap-3">
               <input
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 placeholder="Ask about this incident, techniques, or threat actors..."
                 disabled={loading}
-                className="flex-1 px-4 py-3 rounded-lg border border-[var(--border)] bg-[var(--bg-inset)] text-sm text-[var(--text-primary)] outline-none focus:border-[var(--primary-dim)] transition-colors placeholder-[var(--text-muted)]"
+                className="flex-1 px-4 py-3 rounded-lg border border-[var(--border)] bg-[var(--bg-inset)] text-base text-[var(--text-primary)] outline-none focus:border-[var(--primary-dim)] transition-colors placeholder-[var(--text-muted)]"
               />
               <button 
                 type="submit" 

@@ -2,9 +2,9 @@
  * PlexusBackground — Interactive canvas node-and-edge animation.
  * Extracted from LoginPage/RegisterPage to eliminate 120-line duplication.
  */
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, memo } from 'react'
 
-export function PlexusBackground() {
+export const PlexusBackground = memo(function PlexusBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -24,7 +24,7 @@ export function PlexusBackground() {
     window.addEventListener('resize', handleResize)
 
     // Node configuration
-    const numNodes = Math.min(100, Math.floor((width * height) / 15000))
+    const numNodes = Math.min(40, Math.floor((width * height) / 25000))
     const nodes: Array<{
       x: number
       y: number
@@ -127,4 +127,4 @@ export function PlexusBackground() {
       className="absolute inset-0 w-full h-full pointer-events-none block z-0"
     />
   )
-}
+})

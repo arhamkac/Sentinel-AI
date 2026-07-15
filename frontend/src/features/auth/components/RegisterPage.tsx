@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Eye, EyeOff, Lock, Mail, Shield, User, Building, Sparkles } from 'lucide-react'
+import { Eye, EyeOff, Lock, Mail, Shield, User, Building } from 'lucide-react'
 import { Input } from '@/components/ui'
 import { authService } from '@/services/auth.service'
 import { useAuthStore } from '@/stores/auth.store'
@@ -15,19 +15,7 @@ export function RegisterPage() {
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
 
-  const handleDemoAccess = () => {
-    localStorage.setItem('access_token', 'mock_demo_token')
-    localStorage.setItem('refresh_token', 'mock_demo_token')
-    setUser({
-      id: 'demo-user',
-      name: 'Demo Analyst',
-      email: 'demo@sentinel.ai',
-      role: 'admin',
-      organization_id: 'demo-org',
-      created_at: new Date().toISOString()
-    })
-    navigate('/dashboard')
-  }
+
 
   const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm(prev => ({ ...prev, [field]: e.target.value }))
@@ -118,28 +106,6 @@ export function RegisterPage() {
               <p className="text-xs text-[#3d566e] mt-1 font-mono">Join Sentinel AI platform</p>
             </div>
 
-            {/* Live Demo bypass */}
-            <button
-              type="button"
-              onClick={handleDemoAccess}
-              className="w-full h-11 rounded-lg border font-semibold flex items-center justify-center gap-2.5 text-sm transition-all duration-300 relative overflow-hidden group cursor-pointer"
-              style={{
-                background: 'linear-gradient(#071022, #071022) padding-box, linear-gradient(135deg, #00E5FF, #7C3AED) border-box',
-                borderColor: 'transparent',
-                boxShadow: '0 0 20px rgba(0, 229, 255, 0.12)',
-              }}
-            >
-              <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-[#00E5FF]/20 to-transparent translate-x-[-100%] group-hover:animate-[sweep-right_1s_ease-out]" />
-              <Sparkles className="w-4 h-4 text-[#00E5FF]" />
-              <span className="text-white group-hover:text-[#00E5FF] transition-colors">Enter Live Demo Workspace</span>
-            </button>
-
-            {/* Divider */}
-            <div className="flex items-center gap-3">
-              <div className="flex-1 h-[1px] bg-[#162030]" />
-              <span className="text-[9px] font-mono text-[#3d566e] uppercase tracking-widest shrink-0">or register details</span>
-              <div className="flex-1 h-[1px] bg-[#162030]" />
-            </div>
 
             <form onSubmit={handleSubmit} className="space-y-3">
               <Input

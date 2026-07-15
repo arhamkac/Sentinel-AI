@@ -8,6 +8,7 @@ from app.models.event import SecurityEvent
 from app.models.simulation import SimulationRun
 from app.websockets.manager import manager
 from app.core.config import settings
+from app.services.ai.correlation import correlate_event
 
 logger = logging.getLogger(__name__)
 
@@ -208,6 +209,12 @@ async def run_scenario_task(scenario_id: str, organization_id: str, run_id: str)
                 db.add(event)
                 await db.flush()
 
+                # Correlate event to link it to an incident (or create a new one)
+                incident_id = await correlate_event(event, db)
+                if incident_id:
+                    event.incident_id = incident_id
+                    await db.flush()
+
                 # Increment count
                 events_generated += 1
 
@@ -228,6 +235,7 @@ async def run_scenario_task(scenario_id: str, organization_id: str, run_id: str)
                     "anomaly_score": event.anomaly_score,
                     "mitre_technique_id": event.mitre_technique_id,
                     "mitre_technique_name": event.mitre_technique_name,
+                    "incident_id": event.incident_id,
                     "organization_id": event.organization_id,
                     "is_simulated": event.is_simulated,
                     "timestamp": event.timestamp.isoformat()

@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
 import { useEventStream } from '@/hooks/useWebSocket'
+import { GlobalCopilot } from '../ai/GlobalCopilot'
 
 export function AppShell() {
   useEventStream()
@@ -16,10 +17,11 @@ export function AppShell() {
       <Sidebar />
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden relative z-10">
         <Topbar />
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden min-w-0">
           <Outlet />
         </main>
       </div>
+      <GlobalCopilot />
     </div>
   )
 }

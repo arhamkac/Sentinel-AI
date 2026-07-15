@@ -36,31 +36,38 @@ export const aiService = {
       const msg = message.toLowerCase()
       
       // Handle navigation intents
-      if (msg.includes('go to') || msg.includes('navigate') || msg.includes('show me') || msg.includes('open')) {
-        if (msg.includes('dashboard') || msg.includes('home')) {
+      if (/\b(go to|navigate|show me|open)\b/.test(msg)) {
+        if (/\b(dashboard|home)\b/.test(msg)) {
           return { response: 'Navigating to Dashboard...', sources: ['System'], navigateTo: '/dashboard' }
         }
-        if (msg.includes('incident')) {
+        if (/\b(incident|incidents)\b/.test(msg)) {
           return { response: 'Navigating to Incidents...', sources: ['System'], navigateTo: '/incidents' }
         }
-        if (msg.includes('graph') || msg.includes('attack')) {
+        if (/\b(graph|attack)\b/.test(msg)) {
           return { response: 'Navigating to Attack Graph...', sources: ['System'], navigateTo: '/attack-graph' }
         }
-        if (msg.includes('simulat')) {
+        if (/\b(simulat(or|ion)?)\b/.test(msg)) {
           return { response: 'Navigating to Simulator...', sources: ['System'], navigateTo: '/simulator' }
         }
-        if (msg.includes('threat') || msg.includes('intel')) {
+        if (/\b(threat|intel)\b/.test(msg)) {
           return { response: 'Navigating to Threat Intel...', sources: ['System'], navigateTo: '/threat-intel' }
         }
       }
 
       // Handle general knowledge
-      if (msg.includes('hello') || msg.includes('hi')) {
+      if (/\b(hello|hi|hey|greetings)\b/.test(msg)) {
         return { response: 'Hello! I am Sentinel AI. I can analyze incidents, predict threats, or navigate you around the platform. What do you need?', sources: ['Sentinel KB'] }
       }
 
-      if (msg.includes('how to use') || msg.includes('help')) {
+      if (/\b(how to use|help)\b/.test(msg)) {
         return { response: 'I can help you navigate (e.g. "go to simulator"), analyze incidents, or provide MITRE intel. Try asking me about a specific incident or tell me where to go.', sources: ['User Manual'] }
+      }
+
+      if (/\b(what is this|built for|what do you do|purpose)\b/.test(msg)) {
+        return { 
+          response: 'Sentinel-AI is a next-generation **XDR (Extended Detection and Response)** and **SIEM (Security Information and Event Management)** platform.\n\nIt is built to:\n1. Detect advanced cyber threats across your network.\n2. Visualize attack paths (like Lateral Movement and Ransomware) using Attack Graphs.\n3. Automatically map attacker behaviors to the MITRE ATT&CK framework.\n4. Provide AI-driven remediation steps to isolate affected assets and block malicious actors.',
+          sources: ['Sentinel AI Documentation'] 
+        }
       }
 
       // Default mock fallback for specific incident questions

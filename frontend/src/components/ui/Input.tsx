@@ -34,16 +34,19 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             id={inputId}
             className={cn(
               'w-full h-10 rounded-lg bg-[var(--bg-inset)] border border-[var(--border)] text-[var(--text-primary)] text-sm',
-              'placeholder:text-[var(--text-muted)] pl-3 pr-3',
+              'placeholder:text-[var(--text-muted)]',
               'transition-all duration-150',
               'focus:outline-none focus:ring-2 focus:ring-[var(--primary-ring)] focus:border-[var(--primary-dim)]',
               'hover:border-[var(--border-strong)]',
               'disabled:opacity-50 disabled:cursor-not-allowed',
               error && 'border-[var(--danger)] focus:ring-[var(--danger-ring)]',
-              leftIcon && 'pl-10',
-              rightIcon && 'pr-10',
               className
             )}
+            style={{
+              paddingLeft: leftIcon ? '2.5rem' : '0.75rem',
+              paddingRight: rightIcon ? '2.5rem' : '0.75rem',
+              ...props.style
+            }}
             {...props}
           />
           {rightIcon && (

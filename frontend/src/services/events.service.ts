@@ -9,6 +9,7 @@ export interface EventFilters {
   search?: string
   from_time?: string
   to_time?: string
+  incident_id?: string
 }
 
 export const eventsService = {

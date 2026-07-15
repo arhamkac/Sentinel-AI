@@ -8,8 +8,10 @@ import {
 import { PageContainer } from '@/components/layout'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { incidentsService } from '@/services/incidents.service'
+import { eventsService } from '@/services/events.service'
 import type { Incident } from '@/types'
 import { getSeverityStyles } from '@/lib/severity'
+import { askCopilot } from '@/lib/copilot'
 
 const MOCK_INCIDENT: Incident = {
   id: 'INC-2024-089',
@@ -54,12 +56,18 @@ const MOCK_INCIDENT: Incident = {
 export function IncidentDetailPage() {
   const { id } = useParams<{ id: string }>()
   const queryClient = useQueryClient()
-  const [activeTab, setActiveTab] = useState<'overview' | 'assets' | 'mitre'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'assets' | 'mitre' | 'logs'>('overview')
 
   const { data: incident, isLoading } = useQuery({
     queryKey: ['incident', id],
     queryFn: () => incidentsService.get(id!),
     enabled: !!id,
+  })
+
+  const { data: eventsData, isLoading: isLoadingEvents } = useQuery({
+    queryKey: ['incident-events', id],
+    queryFn: () => eventsService.list({ incident_id: id }),
+    enabled: !!id && activeTab === 'logs',
   })
 
   const display = incident ?? MOCK_INCIDENT
@@ -127,8 +135,8 @@ export function IncidentDetailPage() {
                 <span className="text-xs uppercase font-medium px-2.5 py-0.5 rounded border border-[var(--border)] bg-[var(--bg-inset)] text-[var(--text-muted)]">
                   {display.status.replace('_', ' ')}
                 </span>
-                <span className="text-xs font-mono text-[var(--text-muted)] px-2 py-0.5 rounded border border-[var(--border)] bg-[var(--bg-inset)]">
-                  {display.id}
+                 <span className="text-xs font-mono text-[var(--text-muted)] px-2 py-0.5 rounded border border-[var(--border)] bg-[var(--bg-inset)]">
+                  {display.id.includes('-') && display.id.length > 20 ? `#${display.id.split('-')[0].toUpperCase()}` : display.id}
                 </span>
               </div>
               <h1 className="text-2xl font-bold text-[var(--text-primary)] mb-2">
@@ -160,7 +168,7 @@ export function IncidentDetailPage() {
 
       {/* ── Tabs ── */}
       <div className="flex gap-1 border-b border-[var(--border)] mt-2">
-        {(['overview', 'assets', 'mitre'] as const).map(tab => (
+        {(['overview', 'assets', 'mitre', 'logs'] as const).map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -170,7 +178,7 @@ export function IncidentDetailPage() {
                 : 'text-[var(--text-muted)] border-transparent hover:text-[var(--text-primary)]'
             }`}
           >
-            {tab === 'overview' ? 'Investigation Overview' : tab === 'assets' ? 'Affected Assets' : 'MITRE ATT&CK'}
+            {tab === 'overview' ? 'Investigation Overview' : tab === 'assets' ? 'Affected Assets' : tab === 'mitre' ? 'MITRE ATT&CK' : 'Event Logs'}
           </button>
         ))}
       </div>
@@ -316,6 +324,105 @@ export function IncidentDetailPage() {
                   </tbody>
                 </table>
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {activeTab === 'logs' && (
+          <Card>
+            <CardHeader className="border-b border-[var(--border)]" style={{ padding: '24px' }}>
+              <div className="flex flex-col gap-1">
+                <CardTitle>Correlated Security Events</CardTitle>
+                <p className="text-sm text-[var(--text-secondary)] mt-2 leading-relaxed" style={{ maxWidth: '800px' }}>
+                  💡 **What is this?** These are the raw digital footprints (log events) that triggered this incident. 
+                  Think of them like security camera footage—each line represents a specific activity detected on your network.
+                  If any log looks too technical, click the **Ask AI** button next to it for a simple, plain-English explanation!
+                </p>
+              </div>
+            </CardHeader>
+            <CardContent style={{ padding: '24px' }}>
+              {isLoadingEvents ? (
+                <div className="flex items-center justify-center p-8">
+                  <div className="animate-pulse text-sm text-[var(--text-muted)]">Loading events...</div>
+                </div>
+              ) : !eventsData || eventsData.items.length === 0 ? (
+                <div className="flex flex-col items-center justify-center p-8 text-[var(--text-muted)] bg-[var(--bg-inset)] rounded-lg border border-[var(--border)] border-dashed">
+                  <p className="text-sm">No correlated event logs found for this incident.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-[var(--border)] text-[var(--text-muted)]">
+                        <th className="pb-3 font-medium">Timestamp</th>
+                        <th className="pb-3 font-medium">Type</th>
+                        <th className="pb-3 font-medium">Severity</th>
+                        <th className="pb-3 font-medium">Host</th>
+                        <th className="pb-3 font-medium">User/Process</th>
+                        <th className="pb-3 font-medium">Description</th>
+                        <th className="pb-3 font-medium">AI Help</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[var(--border)]">
+                      {eventsData.items.map(event => {
+                        const sevColors: Record<string, string> = {
+                          critical: 'text-[var(--danger)] bg-[var(--danger-bg)] border-[var(--danger-ring)]',
+                          high: 'text-[var(--warning)] bg-[var(--warning-bg)] border-[var(--warning-ring)]',
+                          medium: 'text-[var(--primary)] bg-[var(--primary-bg)] border-[var(--primary-ring)]',
+                          low: 'text-[var(--text-muted)] bg-[var(--bg-inset)] border-[var(--border)]',
+                        }
+                        const sevClass = sevColors[event.severity] || sevColors.low
+
+                        return (
+                          <tr key={event.id} className="hover:bg-[var(--bg-hover)] transition-colors">
+                            <td className="py-3.5 font-mono text-xs text-[var(--text-secondary)]">
+                              {new Date(event.timestamp).toLocaleString()}
+                            </td>
+                            <td className="py-3.5 capitalize text-[var(--text-primary)]">
+                              {event.event_type}
+                            </td>
+                            <td className="py-3.5">
+                              <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded border ${sevClass}`}>
+                                {event.severity}
+                              </span>
+                            </td>
+                            <td className="py-3.5 font-mono text-xs text-[var(--text-primary)]">
+                              {event.hostname}
+                            </td>
+                            <td className="py-3.5 text-[var(--text-secondary)]">
+                              {event.user || event.process ? (
+                                <div className="flex flex-col gap-0.5">
+                                  {event.user && <span className="font-mono text-xs text-[var(--text-primary)]">{event.user}</span>}
+                                  {event.process && <span className="text-[10px] text-[var(--text-muted)] font-mono">{event.process}</span>}
+                                </div>
+                              ) : (
+                                <span className="text-[var(--text-muted)]">-</span>
+                              )}
+                            </td>
+                            <td className="py-3.5 text-[var(--text-secondary)] leading-relaxed max-w-md truncate" title={event.description}>
+                              {event.description}
+                              {event.mitre_technique_id && (
+                                <span className="ml-2 px-1.5 py-0.5 text-[10px] font-mono rounded bg-[var(--primary-bg)] text-[var(--primary)] border border-[var(--primary-ring)]">
+                                  {event.mitre_technique_id}
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-3.5">
+                              <button
+                                onClick={() => askCopilot(`Explain this security event log in simple terms for a non-technical person:\nEvent: ${event.description}\nHost: ${event.hostname}\nUser/Process: ${event.user || 'None'} / ${event.process || 'None'}`)}
+                                className="flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded bg-[var(--primary-bg)] text-[var(--primary)] border border-[var(--primary-ring)] hover:brightness-110 transition-all cursor-pointer whitespace-nowrap"
+                              >
+                                <Brain className="w-3.5 h-3.5" />
+                                Ask AI
+                              </button>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}

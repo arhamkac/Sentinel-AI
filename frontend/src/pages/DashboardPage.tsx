@@ -4,7 +4,7 @@ import { incidentsService } from '@/services/incidents.service'
 import { eventsService } from '@/services/events.service'
 import {
   Shield, Activity, Target, ShieldAlert,
-  TrendingUp, TrendingDown, ArrowRight,
+  TrendingUp, ArrowRight,
   ActivitySquare
 } from 'lucide-react'
 import {
@@ -67,7 +67,7 @@ export function DashboardPage() {
         
         {/* KPI 1 */}
         <Card className="flex flex-col justify-between">
-          <CardContent className="p-5">
+          <CardContent style={{ padding: '24px' }}>
             <div className="flex items-center justify-between mb-4">
               <span className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">Security Score</span>
               <div className="w-8 h-8 rounded bg-[var(--primary-bg)] border border-[var(--primary-ring)] flex items-center justify-center">
@@ -87,7 +87,7 @@ export function DashboardPage() {
 
         {/* KPI 2 */}
         <Card className="flex flex-col justify-between">
-          <CardContent className="p-5">
+          <CardContent style={{ padding: '24px' }}>
             <div className="flex items-center justify-between mb-4">
               <span className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">Active Incidents</span>
               <div className="w-8 h-8 rounded bg-[var(--warning-bg)] border border-[var(--warning-ring)] flex items-center justify-center">
@@ -105,7 +105,7 @@ export function DashboardPage() {
 
         {/* KPI 3 */}
         <Card className={`flex flex-col justify-between ${hasCritical ? 'border-[var(--danger)]/50 shadow-[0_0_16px_var(--danger-ring)]' : ''}`}>
-          <CardContent className="p-5">
+          <CardContent style={{ padding: '24px' }}>
             <div className="flex items-center justify-between mb-4">
               <span className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">Threat Level</span>
               <div className={`w-8 h-8 rounded flex items-center justify-center ${hasCritical ? 'bg-[var(--danger-bg)] border border-[var(--danger-ring)]' : 'bg-[var(--primary-bg)] border border-[var(--primary-ring)]'}`}>
@@ -125,7 +125,7 @@ export function DashboardPage() {
 
         {/* KPI 4 */}
         <Card className="flex flex-col justify-between">
-          <CardContent className="p-5">
+          <CardContent style={{ padding: '24px' }}>
             <div className="flex items-center justify-between mb-4">
               <span className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">Mean Time To Detect</span>
               <div className="w-8 h-8 rounded bg-[var(--info-bg)] border border-[var(--info)]/20 flex items-center justify-center">
@@ -152,13 +152,13 @@ export function DashboardPage() {
           
           {/* Main Chart */}
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader style={{ padding: '24px', paddingBottom: 0 }} className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Event Volume & Threat Detection</CardTitle>
                 <p className="text-xs text-[var(--text-muted)] mt-1">24-hour network activity</p>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="min-w-0" style={{ padding: '24px' }}>
               <div className="h-[300px] w-full mt-4">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={chartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
@@ -189,7 +189,7 @@ export function DashboardPage() {
 
           {/* Recent Incidents */}
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader style={{ padding: '24px', paddingBottom: 0 }} className="flex flex-row items-center justify-between">
               <CardTitle>Active Incidents</CardTitle>
               <button
                 onClick={() => navigate('/incidents')}
@@ -198,7 +198,7 @@ export function DashboardPage() {
                 View all <ArrowRight className="w-3 h-3" />
               </button>
             </CardHeader>
-            <CardContent className="pt-0">
+            <CardContent style={{ padding: '24px', paddingTop: '16px' }}>
               <div className="flex flex-col gap-2">
                 {recentIncidents.map(inc => (
                   <div key={inc.id} className="flex items-center justify-between p-3 rounded-lg border border-[var(--border)] bg-[var(--bg-inset)] hover:border-[var(--border-strong)] transition-colors cursor-pointer">
@@ -224,7 +224,7 @@ export function DashboardPage() {
           
           {/* Live Threat Feed */}
           <Card className="flex-1 min-h-[400px] flex flex-col">
-            <CardHeader>
+            <CardHeader style={{ padding: '24px', paddingBottom: '16px' }}>
               <div className="flex items-center justify-between">
                 <CardTitle>Live Threat Feed</CardTitle>
                 <div className="flex items-center gap-1.5">
@@ -233,7 +233,7 @@ export function DashboardPage() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="flex-1 overflow-hidden p-0 relative">
+            <CardContent className="flex-1 overflow-hidden relative" style={{ padding: 0 }}>
               <div className="absolute inset-0 overflow-y-auto px-6 pb-6 pt-2 flex flex-col gap-3">
                 {liveEvents.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-[var(--text-muted)] text-sm">
