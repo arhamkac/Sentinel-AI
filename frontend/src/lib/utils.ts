@@ -47,27 +47,8 @@ export function capitalize(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1).replace(/_/g, ' ')
 }
 
-export function getSeverityColor(severity: string): string {
-  switch (severity.toLowerCase()) {
-    case 'critical': return '#FF4D6D'
-    case 'high':     return '#F97316'
-    case 'medium':   return '#F59E0B'
-    case 'low':      return '#22C55E'
-    case 'info':     return '#00E5FF'
-    default:         return '#64748B'
-  }
-}
-
-export function getSeverityBg(severity: string): string {
-  switch (severity.toLowerCase()) {
-    case 'critical': return 'rgba(255, 77, 109, 0.1)'
-    case 'high':     return 'rgba(249, 115, 22, 0.1)'
-    case 'medium':   return 'rgba(245, 158, 11, 0.1)'
-    case 'low':      return 'rgba(34, 197, 94, 0.1)'
-    case 'info':     return 'rgba(0, 229, 255, 0.1)'
-    default:         return 'rgba(100, 116, 139, 0.1)'
-  }
-}
+// Severity color/bg utilities have been consolidated into lib/severity.ts
+// Use getSeverityStyles() from '@/lib/severity' for all severity styling needs
 
 export function generateId(): string {
   return Math.random().toString(36).slice(2, 11)

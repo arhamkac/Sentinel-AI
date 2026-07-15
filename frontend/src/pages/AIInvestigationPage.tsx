@@ -1,6 +1,5 @@
-/* eslint-disable react-hooks/purity */
 import { useState, useRef, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Brain, Send, User, Bot, Sparkles, AlertTriangle, ChevronRight } from 'lucide-react'
 import { PageHeader } from '@/components/common'
@@ -79,6 +78,7 @@ function FormattedContent({ content }: { content: string }) {
 
 export function AIInvestigationPage() {
   const { incidentId } = useParams<{ incidentId?: string }>()
+  const navigate = useNavigate()
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '0', role: 'assistant', timestamp: new Date(),
@@ -109,12 +109,10 @@ export function AIInvestigationPage() {
         content: response.response, sources: response.sources, timestamp: new Date(),
       }])
       
-      // If AI requests navigation
+      // If AI requests navigation, use React Router instead of hard reload
       if (response.navigateTo) {
         setTimeout(() => {
-          // Add a generic navigation fallback or use context router
-          // For now, window.location.href or if we have navigate hook
-          window.location.href = response.navigateTo as string
+          navigate(response.navigateTo as string)
         }, 1500)
       }
     } catch {

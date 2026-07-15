@@ -128,5 +128,11 @@ async def refresh_token(payload: RefreshRequest, db: AsyncSession = Depends(get_
 
 
 @router.post("/logout")
-async def logout():
-    return {"detail": "Logged out successfully"}
+async def logout(current_user: User = Depends(get_current_active_user)):
+    """Logout the current user.
+
+    Note: JWT tokens are stateless and cannot be server-side invalidated without
+    a token blacklist (e.g. Redis). The client is responsible for discarding tokens.
+    This endpoint validates the token is still valid before acknowledging logout.
+    """
+    return {"detail": f"User {current_user.email} logged out successfully"}

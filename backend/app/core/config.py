@@ -1,5 +1,7 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import model_validator
 from typing import Optional
+import warnings
 
 
 class Settings(BaseSettings):
@@ -53,6 +55,22 @@ class Settings(BaseSettings):
 
     # ─── Simulation ───────────────────────────────────────────────
     SIMULATION_EVENT_DELAY_MS: int = 200
+
+    @model_validator(mode="after")
+    def _validate_secret_key(self) -> "Settings":
+        """Prevent deploying with the default SECRET_KEY in non-dev environments."""
+        _DEFAULT_KEY = "changeme-use-a-real-256bit-secret-in-production"
+        if self.SECRET_KEY == _DEFAULT_KEY:
+            if self.ENVIRONMENT != "development":
+                raise ValueError(
+                    f"SECRET_KEY must be changed from default in '{self.ENVIRONMENT}' environment. "
+                    "Set a secure 256-bit secret via the SECRET_KEY environment variable."
+                )
+            warnings.warn(
+                "Using default SECRET_KEY — acceptable for development only.",
+                stacklevel=2,
+            )
+        return self
 
 
 settings = Settings()

@@ -225,16 +225,19 @@ const MOCK_GRAPH: AttackGraph = {
 }
 
 function buildFlowElements(graph: AttackGraph): { nodes: Node[]; edges: Edge[] } {
-  const positions: Record<string, { x: number; y: number }> = {
-    n1: { x: 0,   y: 200 }, n2: { x: 250, y: 100 }, n3: { x: 500, y: 200 },
-    n4: { x: 750, y: 100 }, n5: { x: 1000, y: 200 }, n6: { x: 1250, y: 100 },
-    n7: { x: 1500, y: 200 }, n8: { x: 1750, y: 100 }, n9: { x: 2000, y: 200 },
-  }
+  // Auto-layout: arrange nodes left-to-right with alternating vertical offset.
+  // Works for any number of nodes regardless of their IDs (no hardcoded positions).
+  const X_SPACING = 280
+  const Y_CENTER = 180
+  const Y_OFFSET = 80
 
-  const nodes: Node[] = graph.nodes.map(n => ({
+  const nodes: Node[] = graph.nodes.map((n, i) => ({
     id: n.id,
     type: n.type,
-    position: positions[n.id] ?? { x: Math.random() * 1400, y: Math.random() * 400 },
+    position: {
+      x: i * X_SPACING,
+      y: Y_CENTER + (i % 2 === 0 ? -Y_OFFSET : Y_OFFSET),
+    },
     data: { label: n.label, severity: n.severity, mitre_id: n.mitre_id },
   }))
 

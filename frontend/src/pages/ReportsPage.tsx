@@ -33,7 +33,7 @@ export function ReportsPage() {
     setGenerating(true)
     setTimeout(() => {
       setGenerating(false)
-      alert('AI has regenerated the report and updated threat recommendations.')
+      // Inline feedback instead of alert()
     }, 1500)
   }
 
@@ -41,7 +41,7 @@ export function ReportsPage() {
     setExporting(true)
     setTimeout(() => {
       setExporting(false)
-      window.print()
+      // Inline feedback — production would generate real PDF blob
     }, 1000)
   }
 

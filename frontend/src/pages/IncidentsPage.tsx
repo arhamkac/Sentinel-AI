@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Search, Filter, RefreshCw, AlertTriangle, ShieldAlert, Target } from 'lucide-react'
 import { PageContainer } from '@/components/layout'
@@ -19,18 +19,29 @@ const MOCK_INCIDENTS: Incident[] = [
 
 export function IncidentsPage() {
   const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [severityFilter, setSeverityFilter] = useState('')
 
+  // Debounce search input to avoid API spam
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300)
+    return () => clearTimeout(timer)
+  }, [search])
+
   const { data, refetch, isLoading } = useQuery({
-    queryKey: ['incidents', { search, severity: severityFilter }],
-    queryFn: () => incidentsService.list({ search, severity: severityFilter, page: 1, page_size: 20 }),
+    queryKey: ['incidents', { search: debouncedSearch, severity: severityFilter }],
+    queryFn: () => incidentsService.list({ search: debouncedSearch, severity: severityFilter, page: 1, page_size: 20 }),
   })
 
-  const incidents = data?.items ?? MOCK_INCIDENTS
-  const filtered = incidents.filter(i =>
-    (!search || i.title.toLowerCase().includes(search.toLowerCase())) &&
-    (!severityFilter || i.severity === severityFilter)
-  )
+  // Use API data if available; fall back to mock data with client-side filtering
+  const isUsingMockData = !data?.items
+  const rawIncidents = data?.items ?? MOCK_INCIDENTS
+  const filtered = isUsingMockData
+    ? rawIncidents.filter(i =>
+        (!search || i.title.toLowerCase().includes(search.toLowerCase())) &&
+        (!severityFilter || i.severity === severityFilter)
+      )
+    : rawIncidents
 
   const stats = [
     { label: 'Total Incidents', value: filtered.length, icon: Target, colorClass: 'text-[var(--text-primary)]', bgClass: 'bg-[var(--bg-inset)]' },

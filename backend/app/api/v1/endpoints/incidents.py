@@ -13,6 +13,36 @@ from pydantic import BaseModel
 router = APIRouter()
 
 
+def _escape_like(value: str) -> str:
+    """Escape special LIKE pattern characters in user input."""
+    return value.replace("%", "\\%").replace("_", "\\_")
+
+
+def _serialize_incident(inc: 'Incident') -> 'IncidentResponse':
+    """Single source of truth for Incident → IncidentResponse serialization."""
+    return IncidentResponse(
+        id=inc.id,
+        title=inc.title,
+        description=inc.description,
+        severity=inc.severity,
+        status=inc.status,
+        threat_narrative=inc.threat_narrative,
+        executive_summary=inc.executive_summary,
+        predicted_next_steps=inc.predicted_next_steps,
+        recommendations=inc.recommendations,
+        affected_assets=inc.affected_assets,
+        affected_users=inc.affected_users,
+        mitre_techniques=inc.mitre_techniques,
+        event_count=inc.event_count,
+        assigned_to=inc.assigned_to,
+        organization_id=inc.organization_id,
+        is_simulated=inc.is_simulated,
+        resolved_at=inc.resolved_at.isoformat() if inc.resolved_at else None,
+        created_at=inc.created_at.isoformat(),
+        updated_at=inc.updated_at.isoformat()
+    )
+
+
 class IncidentResponse(BaseModel):
     id: str
     title: str
@@ -92,7 +122,8 @@ async def list_incidents(
     if status:
         conditions.append(Incident.status == status)
     if search:
-        conditions.append(Incident.title.ilike(f"%{search}%") | Incident.description.ilike(f"%{search}%"))
+        escaped = _escape_like(search)
+        conditions.append(Incident.title.ilike(f"%{escaped}%") | Incident.description.ilike(f"%{escaped}%"))
 
     # Auto-seed a demo incident if database is empty for this org
     initial_check_query = select(Incident).where(Incident.organization_id == current_user.organization_id)
@@ -149,30 +180,7 @@ async def list_incidents(
 
     pages = (total + page_size - 1) // page_size if total > 0 else 1
 
-    items = [
-        IncidentResponse(
-            id=inc.id,
-            title=inc.title,
-            description=inc.description,
-            severity=inc.severity,
-            status=inc.status,
-            threat_narrative=inc.threat_narrative,
-            executive_summary=inc.executive_summary,
-            predicted_next_steps=inc.predicted_next_steps,
-            recommendations=inc.recommendations,
-            affected_assets=inc.affected_assets,
-            affected_users=inc.affected_users,
-            mitre_techniques=inc.mitre_techniques,
-            event_count=inc.event_count,
-            assigned_to=inc.assigned_to,
-            organization_id=inc.organization_id,
-            is_simulated=inc.is_simulated,
-            resolved_at=inc.resolved_at.isoformat() if inc.resolved_at else None,
-            created_at=inc.created_at.isoformat(),
-            updated_at=inc.updated_at.isoformat()
-        )
-        for inc in incidents
-    ]
+    items = [_serialize_incident(inc) for inc in incidents]
 
     return PaginatedIncidents(
         items=items,
@@ -201,27 +209,7 @@ async def get_incident(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Incident not found"
         )
-    return IncidentResponse(
-        id=inc.id,
-        title=inc.title,
-        description=inc.description,
-        severity=inc.severity,
-        status=inc.status,
-        threat_narrative=inc.threat_narrative,
-        executive_summary=inc.executive_summary,
-        predicted_next_steps=inc.predicted_next_steps,
-        recommendations=inc.recommendations,
-        affected_assets=inc.affected_assets,
-        affected_users=inc.affected_users,
-        mitre_techniques=inc.mitre_techniques,
-        event_count=inc.event_count,
-        assigned_to=inc.assigned_to,
-        organization_id=inc.organization_id,
-        is_simulated=inc.is_simulated,
-        resolved_at=inc.resolved_at.isoformat() if inc.resolved_at else None,
-        created_at=inc.created_at.isoformat(),
-        updated_at=inc.updated_at.isoformat()
-    )
+    return _serialize_incident(inc)
 
 
 @router.patch("/{id}/status", response_model=IncidentResponse)
@@ -256,27 +244,7 @@ async def update_status(
         inc.resolved_at = datetime.now(timezone.utc)
     await db.commit()
 
-    return IncidentResponse(
-        id=inc.id,
-        title=inc.title,
-        description=inc.description,
-        severity=inc.severity,
-        status=inc.status,
-        threat_narrative=inc.threat_narrative,
-        executive_summary=inc.executive_summary,
-        predicted_next_steps=inc.predicted_next_steps,
-        recommendations=inc.recommendations,
-        affected_assets=inc.affected_assets,
-        affected_users=inc.affected_users,
-        mitre_techniques=inc.mitre_techniques,
-        event_count=inc.event_count,
-        assigned_to=inc.assigned_to,
-        organization_id=inc.organization_id,
-        is_simulated=inc.is_simulated,
-        resolved_at=inc.resolved_at.isoformat() if inc.resolved_at else None,
-        created_at=inc.created_at.isoformat(),
-        updated_at=inc.updated_at.isoformat()
-    )
+    return _serialize_incident(inc)
 
 
 @router.get("/{id}/attack-graph", response_model=AttackGraphResponse)

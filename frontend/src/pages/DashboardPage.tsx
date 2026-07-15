@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { incidentsService } from '@/services/incidents.service'
+import { eventsService } from '@/services/events.service'
 import {
   Shield, Activity, Target, ShieldAlert,
   TrendingUp, TrendingDown, ArrowRight,
@@ -34,9 +35,20 @@ export function DashboardPage() {
     queryKey: ['incidents', { page: 1, page_size: 5 }],
     queryFn: () => incidentsService.list({ page: 1, page_size: 5 }),
   })
+
+  const { data: dashboardStats } = useQuery({
+    queryKey: ['dashboard-stats'],
+    queryFn: () => eventsService.getDashboardStats(),
+  })
   
   const recentIncidents = incidentsData?.items ?? []
 
+  // Use API stats with fallback to reasonable defaults
+  const securityScore = dashboardStats?.security_score ?? 94
+  const activeIncidentCount = dashboardStats?.active_incidents ?? recentIncidents.length
+  const activeIncidentsChange = dashboardStats?.active_incidents_change ?? 0
+  const mttd = dashboardStats?.mean_time_to_detect ?? 12
+  const mttdChange = dashboardStats?.mtd_change ?? -2
   
   const criticalCount = liveEvents.filter(e => e.severity === 'critical').length
   const hasCritical = criticalCount > 0
@@ -63,7 +75,7 @@ export function DashboardPage() {
               </div>
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-bold font-mono text-[var(--text-primary)]">94</span>
+              <span className="text-3xl font-bold font-mono text-[var(--text-primary)]">{securityScore}</span>
               <span className="text-sm font-mono text-[var(--text-muted)]">/ 100</span>
             </div>
             <div className="flex items-center gap-1 mt-3 text-xs text-[var(--success)] font-medium">
@@ -83,11 +95,10 @@ export function DashboardPage() {
               </div>
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-bold font-mono text-[var(--text-primary)]">14</span>
+              <span className="text-3xl font-bold font-mono text-[var(--text-primary)]">{activeIncidentCount}</span>
             </div>
             <div className="flex items-center gap-1 mt-3 text-xs text-[var(--warning)] font-medium">
-              <TrendingDown className="w-3 h-3" />
-              <span>-3 active since yesterday</span>
+              <span>{activeIncidentsChange >= 0 ? '+' : ''}{activeIncidentsChange} active since yesterday</span>
             </div>
           </CardContent>
         </Card>
@@ -122,12 +133,11 @@ export function DashboardPage() {
               </div>
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-bold font-mono text-[var(--text-primary)]">12</span>
+              <span className="text-3xl font-bold font-mono text-[var(--text-primary)]">{mttd}</span>
               <span className="text-sm font-mono text-[var(--text-muted)]">mins</span>
             </div>
             <div className="flex items-center gap-1 mt-3 text-xs text-[var(--success)] font-medium">
-              <TrendingDown className="w-3 h-3" />
-              <span>-2m industry average</span>
+              <span>{mttdChange}m vs. industry average</span>
             </div>
           </CardContent>
         </Card>

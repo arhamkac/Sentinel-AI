@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -47,6 +47,17 @@ export function SimulatorPage() {
   const [activeRun, setActiveRun] = useState<SimulationRun | null>(null)
   const [riskScore, setRiskScore] = useState(15)
   const [stagesDone, setStagesDone] = useState(0)
+  const mockIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // Cleanup interval on unmount to prevent memory leak
+  useEffect(() => {
+    return () => {
+      if (mockIntervalRef.current) {
+        clearInterval(mockIntervalRef.current)
+        mockIntervalRef.current = null
+      }
+    }
+  }, [])
 
   const { data: scenarios = MOCK_SCENARIOS } = useQuery({
     queryKey: ['simulator-scenarios'],
@@ -99,12 +110,15 @@ export function SimulatorPage() {
         setStagesDone(0)
 
         let stage = 0
-        const stageInterval = setInterval(() => {
+        mockIntervalRef.current = setInterval(() => {
           stage++
           setStagesDone(stage)
           setRiskScore(prev => Math.min(91, prev + 14))
           if (stage >= ATTACK_STAGES.length) {
-            clearInterval(stageInterval)
+            if (mockIntervalRef.current) {
+              clearInterval(mockIntervalRef.current)
+              mockIntervalRef.current = null
+            }
             setTimeout(() => {
               setActiveRun(prev => prev ? { ...prev, status: 'completed', events_generated: 147 } : null)
             }, 1000)
