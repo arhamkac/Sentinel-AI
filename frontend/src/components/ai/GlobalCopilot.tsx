@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Bot, X, Send, User, Sparkles } from 'lucide-react'
 import { aiService } from '@/services/ai.service'
@@ -28,7 +28,7 @@ function FormattedContent({ content }: { content: string }) {
           strong: ({ ...props }) => <strong className="font-semibold text-[var(--text-primary)]" {...props} />,
           a: ({ ...props }) => <a className="text-[var(--primary)] hover:underline" target="_blank" rel="noopener noreferrer" {...props} />,
           pre: ({ ...props }) => <pre className="bg-[var(--bg-inset)] p-3 rounded-md overflow-x-auto border border-[var(--border)] my-2" {...props} />,
-          code: ({ node, className, children, ...props }) => {
+          code: ({ className, children, ...props }) => {
             const isInline = !className || !className.includes('language-');
             return (
               <code 
@@ -59,7 +59,7 @@ export function GlobalCopilot() {
   const [loading, setLoading] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
 
-  const sendMessage = async (content: string) => {
+  const sendMessage = useCallback(async (content: string) => {
     if (!content.trim() || loading) return
     const userMsg: Message = { id: Date.now().toString(), role: 'user', content, timestamp: new Date() }
     setMessages(prev => [...prev, userMsg])
@@ -81,7 +81,7 @@ export function GlobalCopilot() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [loading])
 
   useEffect(() => {
     if (isOpen) {

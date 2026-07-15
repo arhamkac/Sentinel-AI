@@ -174,7 +174,11 @@ export function IncidentsPage() {
                         {new Date(incident.created_at).toLocaleTimeString()} · {new Date(incident.created_at).toLocaleDateString()}
                       </div>
                       <div className="text-[11px] text-[var(--text-muted)] mt-1">
-                        <span className="font-medium">Assets:</span> {incident.affected_assets?.map(a => typeof a === 'string' ? a : (a as any).hostname || (a as any).name || (a as any).id || 'Unknown').join(', ') || 'None'}
+                        <span className="font-medium">Assets:</span> {incident.affected_assets?.map(a => {
+                          if (typeof a === 'string') return a
+                          const obj = a as { hostname?: string; name?: string; id?: string }
+                          return obj.hostname || obj.name || obj.id || 'Unknown'
+                        }).join(', ') || 'None'}
                       </div>
                       <div className="text-[11px] text-[var(--text-muted)]">
                         <span className="font-medium">Events:</span> {incident.event_count}

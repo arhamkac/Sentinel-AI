@@ -4,12 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Eye, EyeOff, Lock, Mail, Shield, User, Building } from 'lucide-react'
 import { Input } from '@/components/ui'
 import { authService } from '@/services/auth.service'
-import { useAuthStore } from '@/stores/auth.store'
 import { PlexusBackground } from '@/components/common'
 
 export function RegisterPage() {
   const navigate = useNavigate()
-  const { setUser } = useAuthStore()
   const [form, setForm] = useState({ name: '', email: '', password: '', organization: '' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
