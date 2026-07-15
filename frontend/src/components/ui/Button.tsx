@@ -5,24 +5,28 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00E5FF] focus-visible:ring-offset-2 focus-visible:ring-offset-[#060B16] disabled:pointer-events-none disabled:opacity-40 select-none',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-base)] disabled:pointer-events-none disabled:opacity-40 select-none',
   {
     variants: {
       variant: {
         default:
-          'bg-[#00E5FF] text-[#060B16] font-semibold hover:bg-[#00b8cc] shadow-[0_0_20px_rgba(0,229,255,0.3)] hover:shadow-[0_0_28px_rgba(0,229,255,0.45)] active:scale-[0.98]',
+          'bg-[var(--primary)] text-[var(--bg-base)] font-semibold hover:bg-[var(--primary-dim)] shadow-[0_0_20px_var(--primary-ring)] hover:shadow-[0_0_28px_var(--primary-ring)] active:scale-[0.98]',
         secondary:
-          'bg-[#1E293B] text-[#E5E7EB] border border-[#1E293B] hover:bg-[#243044] hover:border-[#00E5FF]/30 active:scale-[0.98]',
+          'bg-[var(--border)] text-[var(--text-primary)] border border-[var(--border)] hover:bg-[var(--bg-hover)] hover:border-[var(--primary-ring)] active:scale-[0.98]',
         outline:
-          'border border-[#1E293B] bg-transparent text-[#E5E7EB] hover:bg-[#1E293B] hover:border-[#00E5FF]/40 active:scale-[0.98]',
+          'border border-[var(--border)] bg-transparent text-[var(--text-primary)] hover:bg-[var(--bg-hover)] hover:border-[var(--primary-ring)] active:scale-[0.98]',
         ghost:
-          'bg-transparent text-[#94A3B8] hover:bg-[#1E293B] hover:text-[#E5E7EB] active:scale-[0.98]',
+          'bg-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] active:scale-[0.98]',
         danger:
-          'bg-[#FF4D6D] text-white font-semibold hover:bg-[#e03055] shadow-[0_0_20px_rgba(255,77,109,0.25)] hover:shadow-[0_0_28px_rgba(255,77,109,0.4)] active:scale-[0.98]',
+          'bg-[var(--danger)] text-white font-semibold hover:opacity-90 shadow-[0_0_20px_var(--danger-ring)] hover:shadow-[0_0_28px_var(--danger-ring)] active:scale-[0.98]',
         'danger-outline':
-          'border border-[#FF4D6D]/40 bg-transparent text-[#FF4D6D] hover:bg-[#FF4D6D]/10 active:scale-[0.98]',
+          'border border-[var(--danger)] bg-transparent text-[var(--danger)] hover:bg-[var(--danger-bg)] active:scale-[0.98]',
+        success:
+          'bg-[var(--success)] text-white font-semibold hover:opacity-90 shadow-[0_0_20px_var(--success-ring)] active:scale-[0.98]',
+        'success-outline':
+          'border border-[var(--success)] bg-transparent text-[var(--success)] hover:bg-[var(--success-bg)] active:scale-[0.98]',
         link:
-          'bg-transparent text-[#00E5FF] underline-offset-4 hover:underline p-0 h-auto',
+          'bg-transparent text-[var(--primary)] underline-offset-4 hover:underline p-0 h-auto',
       },
       size: {
         sm:   'h-8  px-3   text-xs',

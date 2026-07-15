@@ -6,6 +6,8 @@ import { Card, CardContent } from '@/components/ui/Card'
 import { useQuery } from '@tanstack/react-query'
 import { incidentsService } from '@/services/incidents.service'
 import type { Incident } from '@/types'
+import { PageHeader, EmptyState } from '@/components/common'
+import { getSeverityStyles, getStatusStyles } from '@/lib/severity'
 
 const MOCK_INCIDENTS: Incident[] = [
   { id:'INC-2024-089', title:'Ransomware Deployment Attempt on DC-01', description:'Attacker used phishing to gain initial access before attempting ransomware deployment.', severity:'critical', status:'investigating', affected_assets:['DC-01','FS-02'], affected_users:['john.doe'], mitre_techniques:[{technique_id:'T1566',technique_name:'Phishing',tactic:'initial_access',confidence:0.95}], event_count:247, organization_id:'org-1', created_at: new Date(Date.now()-3600000).toISOString(), updated_at: new Date().toISOString() },
@@ -41,19 +43,19 @@ export function IncidentsPage() {
     <PageContainer className="flex flex-col gap-6">
       
       {/* ── Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-semibold text-[var(--text-primary)]">Incident Management</h1>
-          <p className="text-[var(--text-muted)] mt-1">Active security incidents requiring investigation and response.</p>
-        </div>
-        <button 
-          onClick={() => refetch()}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-[var(--border)] bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] text-sm font-medium text-[var(--text-secondary)] transition-colors"
-        >
-          <RefreshCw className="w-4 h-4" />
-          Refresh
-        </button>
-      </div>
+      <PageHeader
+        title="Incident Management"
+        description="Active security incidents requiring investigation and response."
+        actions={
+          <button 
+            onClick={() => refetch()}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-[var(--border)] bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] text-sm font-medium text-[var(--text-secondary)] transition-colors cursor-pointer"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </button>
+        }
+      />
 
       {/* ── Stats ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -90,6 +92,7 @@ export function IncidentsPage() {
               className="bg-transparent text-sm text-[var(--text-primary)] outline-none cursor-pointer"
               value={severityFilter}
               onChange={e => setSeverityFilter(e.target.value)}
+              aria-label="Filter by severity"
             >
               <option value="">All Severities</option>
               {['critical','high','medium','low'].map(s => (
@@ -105,23 +108,16 @@ export function IncidentsPage() {
               <div key={i} className="h-20 bg-[var(--bg-inset)] animate-pulse m-4 rounded-md" />
             ))
           ) : filtered.length === 0 ? (
-            <div className="p-8 text-center text-[var(--text-muted)] text-sm">
-              No incidents found matching your criteria.
+            <div className="p-4">
+              <EmptyState
+                title="No incidents found"
+                description="No incidents matched your query. Try broadening your filters."
+              />
             </div>
           ) : (
             filtered.map((incident) => {
-              const isCrit = incident.severity === 'critical';
-              const isHigh = incident.severity === 'high';
-              const sevColor = isCrit ? 'var(--danger)' : isHigh ? 'var(--warning)' : 'var(--primary)';
-              const sevBg = isCrit ? 'var(--danger-bg)' : isHigh ? 'var(--warning-bg)' : 'var(--primary-bg)';
-              const sevRing = isCrit ? 'var(--danger-ring)' : isHigh ? 'var(--warning-ring)' : 'var(--primary-ring)';
-              
-              const statusColor = incident.status === 'resolved' ? 'var(--success)' : 
-                                  incident.status === 'investigating' ? 'var(--warning)' : 
-                                  'var(--text-muted)';
-              const statusBg = incident.status === 'resolved' ? 'var(--success-bg)' : 
-                               incident.status === 'investigating' ? 'var(--warning-bg)' : 
-                               'var(--bg-inset)';
+              const sev = getSeverityStyles(incident.severity);
+              const stat = getStatusStyles(incident.status);
 
               return (
                 <Link 
@@ -131,7 +127,7 @@ export function IncidentsPage() {
                 >
                   <div 
                     className="absolute left-0 top-0 bottom-0 w-1 opacity-0 group-hover:opacity-100 transition-opacity" 
-                    style={{ backgroundColor: sevColor }} 
+                    style={{ backgroundColor: sev.color }} 
                   />
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     
@@ -139,13 +135,13 @@ export function IncidentsPage() {
                       <div className="flex items-center gap-2 mb-2">
                         <span 
                           className="text-[10px] uppercase font-bold px-2 py-0.5 rounded border"
-                          style={{ color: sevColor, backgroundColor: sevBg, borderColor: sevRing }}
+                          style={{ color: sev.color, backgroundColor: sev.bg, borderColor: sev.ring }}
                         >
                           {incident.severity}
                         </span>
                         <span 
                           className="text-[10px] uppercase font-medium px-2 py-0.5 rounded border border-[var(--border)]"
-                          style={{ color: statusColor, backgroundColor: statusBg }}
+                          style={{ color: stat.color, backgroundColor: stat.bg }}
                         >
                           {incident.status.replace('_', ' ')}
                         </span>

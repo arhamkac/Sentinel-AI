@@ -27,7 +27,7 @@ const SCENARIOS = [
     label      : 'OT Grid Sabotage',
     description: 'IT compromise → RDP to SCADA → DNP3 command injection → Breaker trip / grid disruption',
     icon       : Server,
-    color      : 'var(--warn)',
+    color      : 'var(--warning)',
     steps      : 5,
   },
 ]
@@ -60,15 +60,15 @@ export function TwinControls({ onScenarioStart }: TwinControlsProps) {
         <div style={{
           width: 28, height: 28, borderRadius: 7,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: 'var(--accent-bg)', border: '1px solid var(--accent-ring)',
+          background: 'var(--primary-bg)', border: '1px solid var(--primary-ring)',
         }}>
-          <Sliders style={{ width: 13, height: 13, color: 'var(--accent)' }} />
+          <Sliders style={{ width: 13, height: 13, color: 'var(--primary)' }} />
         </div>
         <div>
-          <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--tx-high)', lineHeight: 1.2 }}>
+          <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.2 }}>
             Digital Twin Controls
           </p>
-          <p style={{ fontSize: 10, color: 'var(--tx-low)' }}>Red team scenario launcher</p>
+          <p style={{ fontSize: 10, color: 'var(--text-muted)' }}>Red team scenario launcher</p>
         </div>
       </div>
 
@@ -86,7 +86,7 @@ export function TwinControls({ onScenarioStart }: TwinControlsProps) {
               style={{
                 padding: '12px 14px', borderRadius: 12, cursor: 'pointer', textAlign: 'left',
                 background: isActive ? `${sc.color}12` : 'var(--bg-inset)',
-                border: `1px solid ${isActive ? sc.color + '50' : 'var(--bd-hairline)'}`,
+                border: `1px solid ${isActive ? sc.color + '50' : 'var(--border)'}`,
                 outline: 'none',
               }}
             >
@@ -101,12 +101,12 @@ export function TwinControls({ onScenarioStart }: TwinControlsProps) {
                 <div>
                   <p style={{
                     fontSize: 12, fontWeight: 600,
-                    color: isActive ? sc.color : 'var(--tx-high)',
+                    color: isActive ? sc.color : 'var(--text-primary)',
                     fontFamily: 'var(--font-mono)', marginBottom: 4,
                   }}>
                     {sc.label}
                   </p>
-                  <p style={{ fontSize: 10, color: 'var(--tx-low)', lineHeight: 1.5 }}>
+                  <p style={{ fontSize: 10, color: 'var(--text-muted)', lineHeight: 1.5 }}>
                     {sc.description}
                   </p>
                   <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
@@ -122,7 +122,7 @@ export function TwinControls({ onScenarioStart }: TwinControlsProps) {
                 <div style={{ marginLeft: 'auto', flexShrink: 0 }}>
                   <div style={{
                     width: 16, height: 16, borderRadius: '50%',
-                    border: `2px solid ${isActive ? sc.color : 'var(--bd-strong)'}`,
+                    border: `2px solid ${isActive ? sc.color : 'var(--border-strong)'}`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>
                     {isActive && (
@@ -139,16 +139,16 @@ export function TwinControls({ onScenarioStart }: TwinControlsProps) {
       {/* Delay slider */}
       <div style={{
         padding: '14px', borderRadius: 12,
-        background: 'var(--bg-inset)', border: '1px solid var(--bd-hairline)',
+        background: 'var(--bg-inset)', border: '1px solid var(--border)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Clock style={{ width: 12, height: 12, color: 'var(--tx-low)' }} />
-            <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--tx-mid)' }}>
+            <Clock style={{ width: 12, height: 12, color: 'var(--text-muted)' }} />
+            <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>
               Event Delay
             </span>
           </div>
-          <span style={{ fontSize: 12, fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--accent)' }}>
+          <span style={{ fontSize: 12, fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--primary)' }}>
             {delayMs >= 1000 ? `${(delayMs / 1000).toFixed(1)}s` : `${delayMs}ms`}
           </span>
         </div>
@@ -159,11 +159,11 @@ export function TwinControls({ onScenarioStart }: TwinControlsProps) {
           step={200}
           value={delayMs}
           onChange={e => setDelayMs(Number(e.target.value))}
-          style={{ width: '100%', accentColor: 'var(--accent)', cursor: 'pointer' }}
+          style={{ width: '100%', accentColor: 'var(--primary)', cursor: 'pointer' }}
         />
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-          <span style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: 'var(--tx-disabled)' }}>Fast (0.2s)</span>
-          <span style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: 'var(--tx-disabled)' }}>Realistic (10s)</span>
+          <span style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: 'var(--text-disabled)' }}>Fast (0.2s)</span>
+          <span style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: 'var(--text-disabled)' }}>Realistic (10s)</span>
         </div>
       </div>
 
@@ -176,8 +176,8 @@ export function TwinControls({ onScenarioStart }: TwinControlsProps) {
         style={{
           width: '100%', padding: '13px', borderRadius: 12, cursor: isRunning ? 'not-allowed' : 'pointer',
           background: isRunning ? 'var(--bg-inset)' : `${scenario.color}20`,
-          border: `1px solid ${isRunning ? 'var(--bd-hairline)' : scenario.color + '50'}`,
-          color: isRunning ? 'var(--tx-low)' : scenario.color,
+          border: `1px solid ${isRunning ? 'var(--border)' : scenario.color + '50'}`,
+          color: isRunning ? 'var(--text-muted)' : scenario.color,
           fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-mono)',
           textTransform: 'uppercase', letterSpacing: '0.08em',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
@@ -203,20 +203,20 @@ export function TwinControls({ onScenarioStart }: TwinControlsProps) {
       {lastRun && (
         <div style={{
           padding: '10px 12px', borderRadius: 10,
-          background: 'var(--bg-inset)', border: '1px solid var(--bd-hairline)',
+          background: 'var(--bg-inset)', border: '1px solid var(--border)',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         }}>
           <div>
-            <p style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--tx-low)' }}>Last run</p>
-            <p style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--tx-high)', marginTop: 2 }}>
+            <p style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>Last run</p>
+            <p style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', marginTop: 2 }}>
               {lastRun.scenario_id}
             </p>
           </div>
           <span style={{
             fontSize: 9, fontFamily: 'var(--font-mono)', padding: '3px 8px', borderRadius: 5,
-            color: lastRun.status === 'completed' ? 'var(--success)' : lastRun.status === 'running' ? 'var(--accent)' : 'var(--tx-low)',
-            background: lastRun.status === 'completed' ? 'var(--success-bg)' : lastRun.status === 'running' ? 'var(--accent-bg)' : 'transparent',
-            border: `1px solid ${lastRun.status === 'completed' ? 'rgba(34,197,94,0.3)' : lastRun.status === 'running' ? 'var(--accent-ring)' : 'var(--bd-hairline)'}`,
+            color: lastRun.status === 'completed' ? 'var(--success)' : lastRun.status === 'running' ? 'var(--primary)' : 'var(--text-muted)',
+            background: lastRun.status === 'completed' ? 'var(--success-bg)' : lastRun.status === 'running' ? 'var(--primary-bg)' : 'transparent',
+            border: `1px solid ${lastRun.status === 'completed' ? 'rgba(34,197,94,0.3)' : lastRun.status === 'running' ? 'var(--primary-ring)' : 'var(--border)'}`,
           }}>
             {lastRun.status?.toUpperCase()}
           </span>

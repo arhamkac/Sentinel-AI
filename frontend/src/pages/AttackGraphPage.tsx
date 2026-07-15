@@ -9,6 +9,7 @@ import ReactFlow, {
 import 'reactflow/dist/style.css'
 import { motion } from 'framer-motion'
 import { GitBranch, AlertTriangle, Monitor, User, Network, Target, Skull, Cpu } from 'lucide-react'
+import { PageHeader } from '@/components/common'
 import { PageContainer } from '@/components/layout'
 import { Card, CardContent } from '@/components/ui/Card'
 import { incidentsService } from '@/services/incidents.service'
@@ -267,10 +268,10 @@ export function AttackGraphPage() {
     <PageContainer className="flex flex-col gap-6">
       
       {/* ── Page Header ── */}
-      <div>
-        <h1 className="text-xl font-semibold text-[var(--text-primary)]">Attack Graph</h1>
-        <p className="text-[var(--text-muted)] mt-1">Visual map of attack progression and lateral movement.</p>
-      </div>
+      <PageHeader
+        title="Attack Graph"
+        description="Visual map of attack progression and lateral movement."
+      />
 
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
         
@@ -292,7 +293,7 @@ export function AttackGraphPage() {
                 edges={edges}
                 nodeTypes={nodeTypes}
                 fitView
-                fitViewOptions={{ padding: 0.2, maxZoom: 1 }}
+                fitViewOptions={{ padding: 0.2 }}
                 minZoom={0.1}
                 maxZoom={1.5}
                 proOptions={{ hideAttribution: true }}

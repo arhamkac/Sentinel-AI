@@ -31,6 +31,7 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     response: str
     sources: List[str]
+    navigateTo: Optional[str] = None
 
 
 def _build_incident_context(inc: Incident) -> str:
@@ -96,4 +97,5 @@ async def chat(
     return ChatResponse(
         response=result.get("response", ""),
         sources=result.get("sources", []),
+        navigateTo=result.get("navigateTo", None)
     )

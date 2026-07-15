@@ -1,137 +1,11 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Eye, EyeOff, Lock, Mail, Shield, Sparkles } from 'lucide-react'
+import { Eye, EyeOff, Lock, Mail, Shield } from 'lucide-react'
 import { Input } from '@/components/ui'
 import { authService } from '@/services/auth.service'
 import { useAuthStore } from '@/stores/auth.store'
-
-// ─── Interactive Plexus Canvas Background ─────────────────────
-function PlexusBackground() {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    let animationFrameId: number
-    let width = (canvas.width = window.innerWidth)
-    let height = (canvas.height = window.innerHeight)
-
-    const handleResize = () => {
-      width = canvas.width = window.innerWidth
-      height = canvas.height = window.innerHeight
-    }
-    window.addEventListener('resize', handleResize)
-
-    // Node configuration
-    const numNodes = Math.min(100, Math.floor((width * height) / 15000))
-    const nodes: Array<{
-      x: number
-      y: number
-      vx: number
-      vy: number
-      radius: number
-    }> = []
-
-    for (let i = 0; i < numNodes; i++) {
-      nodes.push({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 0.4,
-        vy: (Math.random() - 0.5) * 0.4,
-        radius: Math.random() * 1.5 + 1,
-      })
-    }
-
-    // Mouse tracking
-    const mouse = { x: -1000, y: -1000 }
-    const handleMouseMove = (e: MouseEvent) => {
-      mouse.x = e.clientX
-      mouse.y = e.clientY
-    }
-    const handleMouseLeave = () => {
-      mouse.x = -1000
-      mouse.y = -1000
-    }
-    window.addEventListener('mousemove', handleMouseMove)
-    window.addEventListener('mouseleave', handleMouseLeave)
-
-    const draw = () => {
-      ctx.clearRect(0, 0, width, height)
-
-      // Draw connections
-      ctx.lineWidth = 0.5
-      for (let i = 0; i < nodes.length; i++) {
-        const n1 = nodes[i]
-
-        // Connect to other nodes
-        for (let j = i + 1; j < nodes.length; j++) {
-          const n2 = nodes[j]
-          const dx = n1.x - n2.x
-          const dy = n1.y - n2.y
-          const dist = Math.sqrt(dx * dx + dy * dy)
-
-          if (dist < 100) {
-            const alpha = (1 - dist / 100) * 0.15
-            ctx.strokeStyle = `rgba(0, 229, 255, ${alpha})`
-            ctx.beginPath()
-            ctx.moveTo(n1.x, n1.y)
-            ctx.lineTo(n2.x, n2.y)
-            ctx.stroke()
-          }
-        }
-
-        // Connect to mouse
-        const mdx = n1.x - mouse.x
-        const mdy = n1.y - mouse.y
-        const mdist = Math.sqrt(mdx * mdx + mdy * mdy)
-        if (mdist < 150) {
-          const malpha = (1 - mdist / 150) * 0.25
-          ctx.strokeStyle = `rgba(124, 58, 237, ${malpha})`
-          ctx.beginPath()
-          ctx.moveTo(n1.x, n1.y)
-          ctx.lineTo(mouse.x, mouse.y)
-          ctx.stroke()
-        }
-
-        // Move node
-        n1.x += n1.vx
-        n1.y += n1.vy
-
-        // Boundaries check
-        if (n1.x < 0 || n1.x > width) n1.vx *= -1
-        if (n1.y < 0 || n1.y > height) n1.vy *= -1
-
-        // Draw node
-        ctx.fillStyle = n1.vx > 0 ? 'rgba(0, 229, 255, 0.4)' : 'rgba(124, 58, 237, 0.4)'
-        ctx.beginPath()
-        ctx.arc(n1.x, n1.y, n1.radius, 0, Math.PI * 2)
-        ctx.fill()
-      }
-
-      animationFrameId = requestAnimationFrame(draw)
-    }
-
-    draw()
-
-    return () => {
-      window.removeEventListener('resize', handleResize)
-      window.removeEventListener('mousemove', handleMouseMove)
-      window.removeEventListener('mouseleave', handleMouseLeave)
-      cancelAnimationFrame(animationFrameId)
-    }
-  }, [])
-
-  return (
-    <canvas
-      ref={canvasRef}
-      className="absolute inset-0 w-full h-full pointer-events-none block z-0"
-    />
-  )
-}
+import { PlexusBackground } from '@/components/common'
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -141,21 +15,6 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-
-  const handleDemoAccess = () => {
-    // Immediate local bypass
-    localStorage.setItem('access_token', 'mock_demo_token')
-    localStorage.setItem('refresh_token', 'mock_demo_token')
-    setUser({
-      id: 'demo-user',
-      name: 'Demo Analyst',
-      email: 'demo@sentinel.ai',
-      role: 'admin',
-      organization_id: 'demo-org',
-      created_at: new Date().toISOString()
-    })
-    navigate('/dashboard')
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -252,29 +111,7 @@ export function LoginPage() {
               <p className="text-xs text-[#3d566e] mt-1 font-mono">Access Sentinel AI platform</p>
             </div>
 
-            {/* ── HIGH PRIORITY DEMO WORKSPACE BUTTON ── */}
-            <button
-              type="button"
-              onClick={handleDemoAccess}
-              className="w-full h-11 rounded-lg border font-semibold flex items-center justify-center gap-2.5 text-sm transition-all duration-300 relative overflow-hidden group cursor-pointer"
-              style={{
-                background: 'linear-gradient(#071022, #071022) padding-box, linear-gradient(135deg, #00E5FF, #7C3AED) border-box',
-                borderColor: 'transparent',
-                boxShadow: '0 0 20px rgba(0, 229, 255, 0.12)',
-              }}
-            >
-              {/* Animated scanning shimmer sweep */}
-              <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-[#00E5FF]/20 to-transparent translate-x-[-100%] group-hover:animate-[sweep-right_1s_ease-out]" />
-              <Sparkles className="w-4 h-4 text-[#00E5FF]" />
-              <span className="text-white group-hover:text-[#00E5FF] transition-colors">Enter Live Demo Workspace</span>
-            </button>
 
-            {/* Divider */}
-            <div className="flex items-center gap-3">
-              <div className="flex-1 h-[1px] bg-[#162030]" />
-              <span className="text-[9px] font-mono text-[#3d566e] uppercase tracking-widest shrink-0">or use credentials</span>
-              <div className="flex-1 h-[1px] bg-[#162030]" />
-            </div>
 
             {/* Credentials Login Form */}
             <form onSubmit={handleSubmit} className="space-y-4">

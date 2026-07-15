@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { FileText, Download, Sparkles, Clock, AlertTriangle, ShieldCheck } from 'lucide-react'
+import { FileText, Download, Sparkles, Clock, AlertTriangle, ShieldCheck, RefreshCw } from 'lucide-react'
 import { PageContainer } from '@/components/layout'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { formatDate } from '@/lib/utils'
+import { PageHeader } from '@/components/common'
+import { getSeverityStyles } from '@/lib/severity'
 
 const MOCK_REPORTS = [
   {
@@ -24,27 +26,49 @@ const MOCK_REPORTS = [
 
 export function ReportsPage() {
   const [selected, setSelected] = useState(MOCK_REPORTS[0])
+  const [generating, setGenerating] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
-  const isCrit = selected.severity === 'critical';
-  const isHigh = selected.severity === 'high';
-  const sevColor = isCrit ? 'var(--danger)' : isHigh ? 'var(--warning)' : 'var(--primary)';
-  const sevBg = isCrit ? 'var(--danger-bg)' : isHigh ? 'var(--warning-bg)' : 'var(--primary-bg)';
-  const sevRing = isCrit ? 'var(--danger-ring)' : isHigh ? 'var(--warning-ring)' : 'var(--primary-ring)';
+  const handleGenerate = () => {
+    setGenerating(true)
+    setTimeout(() => {
+      setGenerating(false)
+      alert('AI has regenerated the report and updated threat recommendations.')
+    }, 1500)
+  }
+
+  const handleExport = () => {
+    setExporting(true)
+    setTimeout(() => {
+      setExporting(false)
+      window.print()
+    }, 1000)
+  }
+
+  const sev = getSeverityStyles(selected.severity)
 
   return (
     <PageContainer className="flex flex-col gap-6">
       
       {/* ── Page Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-semibold text-[var(--text-primary)]">Incident Reports</h1>
-          <p className="text-[var(--text-muted)] mt-1">AI-generated executive summaries and technical incident reports.</p>
-        </div>
-        <button className="flex items-center gap-2 px-4 py-2 rounded-md border border-[var(--primary-ring)] bg-[var(--primary-bg)] text-sm font-medium text-[var(--primary)] hover:brightness-110 transition-colors">
-          <Sparkles className="w-4 h-4" />
-          Generate New
-        </button>
-      </div>
+      <PageHeader
+        title="Incident Reports"
+        description="AI-generated executive summaries and technical incident reports."
+        actions={
+          <button 
+            onClick={handleGenerate}
+            disabled={generating}
+            className="flex items-center gap-2 px-4 py-2 rounded-md border border-[var(--primary-ring)] bg-[var(--primary-bg)] text-sm font-medium text-[var(--primary)] hover:brightness-110 transition-colors cursor-pointer disabled:opacity-50"
+          >
+            {generating ? (
+              <RefreshCw className="w-4 h-4 animate-spin" />
+            ) : (
+              <Sparkles className="w-4 h-4" />
+            )}
+            {generating ? 'Generating...' : 'Generate New'}
+          </button>
+        }
+      />
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         
@@ -54,9 +78,7 @@ export function ReportsPage() {
           
           <div className="flex flex-col gap-3">
             {MOCK_REPORTS.map((r, i) => {
-              const rCrit = r.severity === 'critical';
-              const rHigh = r.severity === 'high';
-              const rColor = rCrit ? 'var(--danger)' : rHigh ? 'var(--warning)' : 'var(--primary)';
+
               const isSelected = selected.id === r.id;
 
               return (
@@ -68,7 +90,7 @@ export function ReportsPage() {
                         ? 'border-[var(--border-strong)] bg-[var(--bg-hover)]' 
                         : 'border-[var(--border)] bg-[var(--bg-surface)] hover:border-[var(--border-strong)]'
                     }`}
-                    style={{ borderLeft: isSelected ? `4px solid ${rColor}` : undefined }}
+                    style={{ borderLeft: isSelected ? `4px solid ${getSeverityStyles(r.severity).color}` : undefined }}
                   >
                     <div className="flex items-start justify-between gap-2 mb-3">
                       <p className="text-sm font-semibold text-[var(--text-primary)] leading-snug">{r.title}</p>
@@ -79,9 +101,9 @@ export function ReportsPage() {
                       <span 
                         className="text-[10px] uppercase font-bold px-2 py-0.5 rounded border"
                         style={{ 
-                          color: rColor, 
-                          backgroundColor: rCrit ? 'var(--danger-bg)' : rHigh ? 'var(--warning-bg)' : 'var(--primary-bg)', 
-                          borderColor: rCrit ? 'var(--danger-ring)' : rHigh ? 'var(--warning-ring)' : 'var(--primary-ring)' 
+                          color: getSeverityStyles(r.severity).color, 
+                          backgroundColor: getSeverityStyles(r.severity).bg, 
+                          borderColor: getSeverityStyles(r.severity).ring
                         }}
                       >
                         {r.severity}
@@ -110,9 +132,17 @@ export function ReportsPage() {
                 <FileText className="w-5 h-5 text-[var(--primary)] shrink-0" />
                 <CardTitle className="truncate text-lg">{selected.title}</CardTitle>
               </div>
-              <button className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-[var(--border)] bg-[var(--bg-inset)] hover:bg-[var(--bg-hover)] text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] transition-colors shrink-0">
-                <Download className="w-3.5 h-3.5" />
-                Export PDF
+              <button 
+                onClick={handleExport}
+                disabled={exporting}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-[var(--border)] bg-[var(--bg-inset)] hover:bg-[var(--bg-hover)] text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] transition-colors shrink-0 cursor-pointer disabled:opacity-50"
+              >
+                {exporting ? (
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Download className="w-3.5 h-3.5" />
+                )}
+                {exporting ? 'Exporting...' : 'Export PDF'}
               </button>
             </CardHeader>
 
@@ -122,7 +152,7 @@ export function ReportsPage() {
               <div className="flex items-center gap-4 border-b border-[var(--border)] pb-4">
                 <span 
                   className="text-xs uppercase font-bold px-2.5 py-0.5 rounded border"
-                  style={{ color: sevColor, backgroundColor: sevBg, borderColor: sevRing }}
+                  style={{ color: sev.color, backgroundColor: sev.bg, borderColor: sev.ring }}
                 >
                   {selected.severity}
                 </span>

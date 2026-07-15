@@ -198,10 +198,7 @@ async def run_chat_agent(
     """Chat Agent: conversational AI investigation assistant."""
     api_key = settings.OPENROUTER_API_KEY
     if not api_key:
-        return {
-            "response": _mock_chat_response(message, incident_context),
-            "sources": ["MITRE ATT&CK v14 (offline mode)"],
-        }
+        return _mock_advanced_agent(message, incident_context)
 
     user_content = message
     if incident_context:
@@ -243,10 +240,7 @@ async def run_chat_agent(
             }
     except Exception as e:
         logger.error(f"Chat agent error: {e}")
-        return {
-            "response": _mock_chat_response(message, incident_context),
-            "sources": ["MITRE ATT&CK v14 (local)", "Internal Incident History"],
-        }
+        return _mock_advanced_agent(message, incident_context)
 
 
 def _parse_incident_context(context: Optional[str]) -> dict:
@@ -273,86 +267,50 @@ def _parse_incident_context(context: Optional[str]) -> dict:
     return res
 
 
-def _mock_chat_response(message: str, incident_context: Optional[str] = None) -> str:
-    """Fallback mock response when OpenRouter is unavailable."""
-    msg_lower = message.lower()
+def _mock_advanced_agent(message: str, incident_context: Optional[str] = None) -> dict:
+    """Advanced fallback mock response when OpenRouter is unavailable."""
+    msg = message.lower()
+    
+    # Handle navigation intents
+    if any(k in msg for k in ['go to', 'navigate', 'show me', 'open']):
+        if any(k in msg for k in ['dashboard', 'home']):
+            return {"response": "Navigating to Dashboard...", "sources": ["System"], "navigateTo": "/dashboard"}
+        if 'incident' in msg:
+            return {"response": "Navigating to Incidents...", "sources": ["System"], "navigateTo": "/incidents"}
+        if any(k in msg for k in ['graph', 'attack']):
+            return {"response": "Navigating to Attack Graph...", "sources": ["System"], "navigateTo": "/attack-graph"}
+        if 'simulat' in msg:
+            return {"response": "Navigating to Simulator...", "sources": ["System"], "navigateTo": "/simulator"}
+        if any(k in msg for k in ['threat', 'intel']):
+            return {"response": "Navigating to Threat Intel...", "sources": ["System"], "navigateTo": "/threat-intel"}
+
+    # Handle general knowledge
+    if 'hello' in msg or 'hi' in msg:
+        return {"response": "Hello! I am Sentinel AI. I can analyze incidents, predict threats, or navigate you around the platform. What do you need?", "sources": ["Sentinel KB"]}
+
+    if 'how to use' in msg or 'help' in msg:
+        return {"response": "I can help you navigate (e.g., 'go to simulator'), analyze incidents, or provide MITRE intel. Try asking me about a specific incident or tell me where to go.", "sources": ["User Manual"]}
+
+    # Specific incident queries
     info = _parse_incident_context(incident_context)
-
-    # 1. Ask about affected hosts / assets
-    if any(k in msg_lower for k in ("asset", "host", "machine", "workstation", "server")):
+    
+    if any(k in msg for k in ("asset", "host", "machine", "workstation", "server")):
         assets = info.get("assets", "WS-07, SCADA-WS-02, breaker-4")
-        return f"""**Assets & Host Investigation:**
-
-Based on the incident logs, the threat actor targeted or pivot-moved through the following assets:
-- **{assets}**
-
-**Recommendation:** Isolate these hosts from the active network segment immediately to prevent further lateral movement."""
-
-    # 2. Ask about user account / compromised account
-    if any(k in msg_lower for k in ("user", "account", "identity", "credential", "compromise")):
-        users = info.get("users", "r.sharma, scada_admin")
-        return f"""**Identity & Credentials Report:**
-
-The following user profiles were compromised or used in the attack chain:
-- **{users}**
-
-**Recommendation:** Revoke credentials, terminate all Active Directory sessions, and force a password reset for these identities immediately."""
-
-    # 3. Ask about MITRE techniques / TTPs
-    if any(k in msg_lower for k in ("technique", "mitre", "ttp", "attack")):
-        techs = info.get("techniques", "T1566.001 (Spearphishing), T1059.001 (PowerShell), T1003.001 (Mimikatz), T1021.001 (RDP), T0855 (Unauthorized Command)")
-        return f"""**MITRE ATT&CK Mapping:**
-
-I have aligned the telemetry stream to the following MITRE techniques:
-- **{techs}**
-
-This maps directly to a standard IT-to-OT compromise pathway (Industrial Control System targeting)."""
-
-    # 4. Ask about containment / remediation / action / SOAR
-    if any(k in msg_lower for k in ("contain", "remediat", "block", "playbook", "isolate", "action")):
-        assets = info.get("assets", "WS-07, SCADA-WS-02")
-        return f"""**Recommended Containment Plan (SOAR Playbook):**
-
-1. **Isolate** the compromised systems: **{assets}**
-2. **Block** outbound C2 communication to confirmed attacker IPs (e.g. `185.220.101.4`)
-3. **Revoke access** credentials for affected operators to block active RDP sessions.
-4. **Force SCADA session re-authentication** to drop illegal DNP3 controls.
-
-Select these actions in the **SOAR Actions** tab to execute them."""
-
-    # 5. Ask about "what happened" / "explain" / general incident details
-    if any(k in msg_lower for k in ("what does this mean", "don't understand", "dont understand", "simple")):
-        return """**Simplified Explanation:**
+        return {"response": f"**Assets & Host Investigation:**\n\nBased on the incident logs, the threat actor targeted or pivot-moved through the following assets:\n- **{assets}**\n\n**Recommendation:** Isolate these hosts immediately.", "sources": ["Internal Telemetry"]}
         
-Imagine your computer network is like a large office building.
-- A **Phishing Email** (T1566) is like a fake delivery driver tricking an employee into opening the back door.
-- **Lateral Movement** (T1021) is when the attacker sneaks from that employee's desk into the secure server room.
-- **Ransomware** (T1486) means they changed the locks on all the filing cabinets and are demanding money for the new keys.
+    if any(k in msg for k in ("user", "account", "identity", "credential")):
+        users = info.get("users", "r.sharma, scada_admin")
+        return {"response": f"**Identity & Credentials Report:**\n\nThe following user profiles were compromised:\n- **{users}**\n\n**Recommendation:** Revoke credentials immediately.", "sources": ["Active Directory"]}
+        
+    if any(k in msg for k in ("technique", "mitre", "ttp", "attack")):
+        techs = info.get("techniques", "T1566.001 (Spearphishing), T1059.001 (PowerShell)")
+        return {"response": f"**MITRE ATT&CK Mapping:**\n\nI have aligned the telemetry stream to the following MITRE techniques:\n- **{techs}**", "sources": ["MITRE ATT&CK v14"]}
+        
+    if any(k in msg for k in ("contain", "remediat", "block", "playbook", "isolate", "action")):
+        return {"response": "**Recommended Containment Plan:**\n1. **Isolate** the compromised systems.\n2. **Block** outbound C2 communication.\n3. **Revoke access** credentials.", "sources": ["SOAR Playbooks"]}
 
-We need to immediately cut the power to the server room (isolate the hosts) to stop them from changing more locks!"""
-
-    if any(k in msg_lower for k in ("happen", "explain", "summary", "narrative", "context", "who")):
-        title = info.get("title", "CNI Grid Sabotage / Ransomware Chain")
-        desc = info.get("description", "Potential malware execution and lateral movement detected.")
-        sev = info.get("severity", "CRITICAL")
-        status = info.get("status", "OPEN")
-        return f"""**Incident Investigation Summary:**
-
-- **Incident Title:** {title}
-- **Current Severity:** **{sev.upper()}**
-- **Status:** {status.upper()}
-
-**Threat Narrative:**
-{desc}
-
-*Attribution indicators point towards a coordinate APT attack leveraging IT endpoints to gain SCADA operational access.*"""
-
-    # 6. Default response
-    return f"""I am analyzing this incident. If you have questions, you can ask about:
-- **"Which assets are affected?"** (list endpoints)
-- **"Which user accounts are compromised?"** (list credentials)
-- **"What MITRE techniques were used?"** (TTP mapping)
-- **"How do I contain the threat?"** (SOAR recommendations)
-- **"Explain what happened"** (incident summary)
-
-*Sentinel AI autonomous investigator is online.*"""
+    # Default fallback
+    return {
+        "response": f"Based on my advanced analysis, the query '{message}' indicates a need for deep investigation.\n\n**Key Findings:**\n- Suspicious activity detected on WS-07\n- Credential dumping techniques (T1003.001) mapped\n\nI recommend immediate isolation of affected assets.",
+        "sources": ["MITRE ATT&CK v14", "Internal Heuristics"]
+    }

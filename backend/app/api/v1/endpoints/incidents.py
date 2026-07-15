@@ -85,20 +85,21 @@ async def list_incidents(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ):
-    query = select(Incident).where(Incident.organization_id == current_user.organization_id)
+    conditions = [Incident.organization_id == current_user.organization_id]
 
     if severity:
-        query = query.where(Incident.severity == severity)
+        conditions.append(Incident.severity == severity)
     if status:
-        query = query.where(Incident.status == status)
+        conditions.append(Incident.status == status)
     if search:
-        query = query.where(Incident.title.ilike(f"%{search}%") | Incident.description.ilike(f"%{search}%"))
-
-    result = await db.execute(query)
-    incidents = result.scalars().all()
+        conditions.append(Incident.title.ilike(f"%{search}%") | Incident.description.ilike(f"%{search}%"))
 
     # Auto-seed a demo incident if database is empty for this org
-    if not incidents:
+    initial_check_query = select(Incident).where(Incident.organization_id == current_user.organization_id)
+    initial_result = await db.execute(initial_check_query)
+    existing_incidents = initial_result.scalars().all()
+
+    if not existing_incidents:
         demo_incident = Incident(
             title="Coordinated IT/OT Attack Scenario",
             description="Spear-phishing vector causing remote execution and grid frequency anomalies.",
@@ -135,10 +136,18 @@ async def list_incidents(
         db.add(demo_incident)
         await db.flush()
         await db.commit()
-        incidents = [demo_incident]
 
-    total = len(incidents)
-    pages = 1
+    # Get total count matching conditions
+    count_query = select(func.count()).select_from(Incident).where(*conditions)
+    count_result = await db.execute(count_query)
+    total = count_result.scalar_one()
+
+    # Get paginated items matching conditions ordered by created_at desc
+    query = select(Incident).where(*conditions).order_by(Incident.created_at.desc()).offset((page - 1) * page_size).limit(page_size)
+    result = await db.execute(query)
+    incidents = result.scalars().all()
+
+    pages = (total + page_size - 1) // page_size if total > 0 else 1
 
     items = [
         IncidentResponse(
@@ -222,6 +231,13 @@ async def update_status(
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
 ):
+    ALLOWED_STATUSES = {"open", "investigating", "contained", "resolved", "closed"}
+    if payload.status not in ALLOWED_STATUSES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid status '{payload.status}'. Valid statuses: {sorted(ALLOWED_STATUSES)}"
+        )
+
     result = await db.execute(
         select(Incident).where(
             Incident.id == id,

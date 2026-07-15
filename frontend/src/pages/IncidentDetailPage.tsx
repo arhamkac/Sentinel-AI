@@ -9,6 +9,7 @@ import { PageContainer } from '@/components/layout'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { incidentsService } from '@/services/incidents.service'
 import type { Incident } from '@/types'
+import { getSeverityStyles } from '@/lib/severity'
 
 const MOCK_INCIDENT: Incident = {
   id: 'INC-2024-089',
@@ -77,11 +78,7 @@ export function IncidentDetailPage() {
     )
   }
 
-  const isCrit = display.severity === 'critical';
-  const isHigh = display.severity === 'high';
-  const sevColor = isCrit ? 'var(--danger)' : isHigh ? 'var(--warning)' : 'var(--primary)';
-  const sevBg = isCrit ? 'var(--danger-bg)' : isHigh ? 'var(--warning-bg)' : 'var(--primary-bg)';
-  const sevRing = isCrit ? 'var(--danger-ring)' : isHigh ? 'var(--warning-ring)' : 'var(--primary-ring)';
+  const sev = getSeverityStyles(display.severity)
 
   return (
     <PageContainer className="flex flex-col gap-6">
@@ -123,7 +120,7 @@ export function IncidentDetailPage() {
               <div className="flex items-center gap-3 mb-3">
                 <span 
                   className="text-xs uppercase font-bold px-2.5 py-0.5 rounded border"
-                  style={{ color: sevColor, backgroundColor: sevBg, borderColor: sevRing }}
+                  style={{ color: sev.color, backgroundColor: sev.bg, borderColor: sev.ring }}
                 >
                   {display.severity}
                 </span>

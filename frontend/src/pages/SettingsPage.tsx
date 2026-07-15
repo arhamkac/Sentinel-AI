@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { User, Shield, Bell, Key, Radio, Save, CheckCircle2 } from 'lucide-react'
+import { User, Shield, Bell, Key, Radio, Save, CheckCircle2, RefreshCw } from 'lucide-react'
 import { PageContainer } from '@/components/layout'
 import { Card, CardContent } from '@/components/ui/Card'
 import { useAuthStore } from '@/stores/auth.store'
+import { PageHeader } from '@/components/common'
 
 const TABS = [
   { id: 'profile',       label: 'Profile',       icon: User   },
@@ -13,20 +14,31 @@ const TABS = [
   { id: 'organization',  label: 'Organization',  icon: Radio  },
 ]
 
-function SettingsInput({ label, value, type = 'text', readOnly }: {
-  label: string; value: string; type?: string; readOnly?: boolean
-}) {
+interface SettingsInputProps {
+  label: string
+  value: string
+  onChange?: (val: string) => void
+  type?: string
+  readOnly?: boolean
+}
+
+function SettingsInput({ label, value, onChange, type = 'text', readOnly }: SettingsInputProps) {
+  const inputId = label.toLowerCase().replace(/\s+/g, '-')
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">{label}</label>
+      <label htmlFor={inputId} className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
+        {label}
+      </label>
       <input
+        id={inputId}
         type={type}
-        defaultValue={value}
+        value={value}
+        onChange={e => onChange?.(e.target.value)}
         readOnly={readOnly}
         className={`w-full px-4 py-2.5 rounded-lg border text-sm outline-none transition-colors ${
           readOnly 
             ? 'bg-[var(--bg-inset)] border-[var(--border)] text-[var(--text-muted)] cursor-not-allowed' 
-            : 'bg-[var(--bg-inset)] border-[var(--border)] text-[var(--text-primary)] focus:border-[var(--primary-dim)]'
+            : 'bg-[var(--bg-inset)] border-[var(--border)] text-[var(--text-primary)] focus:border-[var(--primary-dim)] hover:border-[var(--border-strong)]'
         }`}
       />
     </div>
@@ -61,38 +73,86 @@ function SettingsToggle({ label, description, active, onChange }: {
 }
 
 export function SettingsPage() {
-  const { user } = useAuthStore()
+  const { user, setUser } = useAuthStore()
   const [activeTab, setActiveTab] = useState('profile')
+  const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  
+  // Controlled inputs state
+  const [fullName, setFullName] = useState(user?.name ?? 'Demo Analyst')
+  const [emailAddress, setEmailAddress] = useState(user?.email ?? 'analyst@sentinel.cni')
+  const [orgName, setOrgName] = useState('Critical Infrastructure Defense')
+  const [siem, setSiem] = useState('Splunk Enterprise 9.x')
+  const [soar, setSoar] = useState('Palo Alto XSOAR')
+  const [currentPassword, setCurrentPassword] = useState('••••••••••')
+  const [newPassword, setNewPassword] = useState('')
+
+  // Stateful Notification settings
   const [notifs, setNotifs] = useState({ critical: true, high: true, medium: false, email: true, slack: false })
 
+  // Stateful API Key Management
+  const [apiKeys, setApiKeys] = useState([
+    { label: 'Production API Key', key: 'sk-sent-prod-a3f8c2e1d4b7f9...', active: true,  created: '2025-01-15' },
+    { label: 'Development API Key', key: 'sk-sent-dev-b9c3e7d2a8f1c5...',  active: false, created: '2025-03-22' },
+  ])
+
+  const handleGenerateKey = () => {
+    const keySuffix = Array.from({ length: 14 }, () => Math.random().toString(36)[2]).join('')
+    const newKey = {
+      label: 'Development API Key',
+      key: `sk-sent-dev-${keySuffix}...`,
+      active: true,
+      created: new Date().toISOString().split('T')[0]
+    }
+    setApiKeys(prev => [...prev, newKey])
+  }
+
   const handleSave = () => {
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2500)
+    setSaving(true)
+    setTimeout(() => {
+      setSaving(false)
+      setSaved(true)
+      // Save profile name/email back to auth store
+      if (user) {
+        setUser({
+          ...user,
+          name: fullName,
+          email: emailAddress,
+        })
+      }
+      setTimeout(() => setSaved(false), 2500)
+    }, 800)
   }
 
   return (
     <PageContainer className="flex flex-col gap-6">
       
       {/* ── Page Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-semibold text-[var(--text-primary)]">System Settings</h1>
-          <p className="text-[var(--text-muted)] mt-1">Manage account, security, and platform preferences.</p>
-        </div>
-        <motion.button
-          whileTap={{ scale: 0.96 }}
-          onClick={handleSave}
-          className={`flex items-center gap-2 px-4 py-2 rounded-md font-semibold text-sm transition-colors ${
-            saved 
-              ? 'bg-[var(--success-bg)] text-[var(--success)] border border-[var(--success-ring)]' 
-              : 'bg-[var(--primary)] text-[var(--bg-base)] hover:brightness-110'
-          }`}
-        >
-          {saved ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-          {saved ? 'Saved!' : 'Save Changes'}
-        </motion.button>
-      </div>
+      <PageHeader
+        title="System Settings"
+        description="Manage account, security, and platform preferences."
+        actions={
+          <motion.button
+            whileTap={{ scale: 0.96 }}
+            onClick={handleSave}
+            disabled={saving}
+            className={`flex items-center gap-2 px-4 py-2 rounded-md font-semibold text-sm transition-colors cursor-pointer disabled:opacity-50 ${
+              saved 
+                ? 'bg-[var(--success-bg)] text-[var(--success)] border border-[var(--success-ring)]' 
+                : 'bg-[var(--primary)] text-[var(--bg-base)] hover:brightness-110'
+            }`}
+          >
+            {saving ? (
+              <RefreshCw className="w-4 h-4 animate-spin" />
+            ) : saved ? (
+              <CheckCircle2 className="w-4 h-4" />
+            ) : (
+              <Save className="w-4 h-4" />
+            )}
+            {saving ? 'Saving...' : saved ? 'Saved!' : 'Save Changes'}
+          </motion.button>
+        }
+      />
 
       <div className="flex flex-col md:flex-row gap-8">
         
@@ -102,7 +162,7 @@ export function SettingsPage() {
             <button
               key={t.id}
               onClick={() => setActiveTab(t.id)}
-              className={`flex items-center gap-3 h-10 px-4 rounded-lg text-sm font-medium transition-colors text-left ${
+              className={`flex items-center gap-3 h-10 px-4 rounded-lg text-sm font-medium transition-colors text-left cursor-pointer ${
                 activeTab === t.id 
                   ? 'bg-[var(--bg-hover)] text-[var(--primary)] font-semibold' 
                   : 'text-[var(--text-secondary)] hover:bg-[var(--bg-surface)] hover:text-[var(--text-primary)]'
@@ -123,12 +183,12 @@ export function SettingsPage() {
                 <div>
                   <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-4">Operator Profile</h3>
                   <div className="flex items-center gap-5">
-                    <div className="w-16 h-16 rounded-2xl bg-[var(--bg-inset)] border border-[var(--border)] flex items-center justify-center text-2xl font-bold text-[var(--primary)]">
-                      {user?.name?.charAt(0).toUpperCase() ?? 'A'}
+                    <div className="w-16 h-16 rounded-2xl bg-[var(--bg-inset)] border border-[var(--border)] flex items-center justify-center text-2xl font-bold text-[var(--primary)] select-none">
+                      {fullName.charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <div className="text-base font-bold text-[var(--text-primary)]">{user?.name ?? 'Demo Analyst'}</div>
-                      <div className="text-sm text-[var(--text-muted)] mt-1">{user?.email ?? 'analyst@sentinel.cni'}</div>
+                      <div className="text-base font-bold text-[var(--text-primary)]">{fullName}</div>
+                      <div className="text-sm text-[var(--text-muted)] mt-1">{emailAddress}</div>
                       <div className="mt-2 inline-flex text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-[var(--primary-bg)] text-[var(--primary)] border border-[var(--primary-ring)]">
                         Level 4 Access
                       </div>
@@ -136,9 +196,9 @@ export function SettingsPage() {
                   </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  <SettingsInput label="Full Name" value={user?.name ?? 'Demo Analyst'} />
-                  <SettingsInput label="Email Address" value={user?.email ?? 'analyst@sentinel.cni'} type="email" />
-                  <SettingsInput label="Organization" value="Critical Infrastructure Defense" readOnly />
+                  <SettingsInput label="Full Name" value={fullName} onChange={setFullName} />
+                  <SettingsInput label="Email Address" value={emailAddress} onChange={setEmailAddress} type="email" />
+                  <SettingsInput label="Organization" value={orgName} readOnly />
                   <SettingsInput label="Role" value={user?.role ?? 'analyst'} readOnly />
                 </div>
               </div>
@@ -149,8 +209,8 @@ export function SettingsPage() {
                 <div>
                   <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-4">Security Configuration</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6">
-                    <SettingsInput label="Current Password" value="••••••••••" type="password" />
-                    <SettingsInput label="New Password" value="" type="password" />
+                    <SettingsInput label="Current Password" value={currentPassword} onChange={setCurrentPassword} type="password" />
+                    <SettingsInput label="New Password" value={newPassword} onChange={setNewPassword} type="password" />
                   </div>
                 </div>
                 
@@ -199,10 +259,7 @@ export function SettingsPage() {
               <div className="flex flex-col gap-6">
                 <h3 className="text-sm font-semibold text-[var(--text-primary)]">API Key Management</h3>
                 <div className="flex flex-col gap-4">
-                  {[
-                    { label: 'Production API Key', key: 'sk-sent-prod-a3f8c2e1d4b7f9...', active: true,  created: '2025-01-15' },
-                    { label: 'Development API Key', key: 'sk-sent-dev-b9c3e7d2a8f1c5...',  active: false, created: '2025-03-22' },
-                  ].map((k, i) => (
+                  {apiKeys.map((k, i) => (
                     <div key={i} className="flex items-center justify-between p-4 rounded-xl border border-[var(--border)] bg-[var(--bg-inset)]">
                       <div>
                         <div className="text-sm font-semibold text-[var(--text-primary)]">{k.label}</div>
@@ -218,7 +275,10 @@ export function SettingsPage() {
                       </span>
                     </div>
                   ))}
-                  <button className="self-start px-4 py-2 rounded-md border border-[var(--primary-ring)] bg-[var(--primary-bg)] text-sm font-medium text-[var(--primary)] hover:brightness-110 transition-colors">
+                  <button 
+                    onClick={handleGenerateKey}
+                    className="self-start px-4 py-2 rounded-md border border-[var(--primary-ring)] bg-[var(--primary-bg)] text-sm font-medium text-[var(--primary)] hover:brightness-110 transition-colors cursor-pointer"
+                  >
                     + Generate New Key
                   </button>
                 </div>
@@ -230,10 +290,10 @@ export function SettingsPage() {
                 <div>
                   <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-4">Organization Configuration</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    <SettingsInput label="Organization Name" value="Critical Infrastructure Defense" />
+                    <SettingsInput label="Organization Name" value={orgName} onChange={setOrgName} />
                     <SettingsInput label="Domain" value="sentinel.cni" readOnly />
-                    <SettingsInput label="SIEM Integration" value="Splunk Enterprise 9.x" />
-                    <SettingsInput label="SOAR Platform" value="Palo Alto XSOAR" />
+                    <SettingsInput label="SIEM Integration" value={siem} onChange={setSiem} />
+                    <SettingsInput label="SOAR Platform" value={soar} onChange={setSoar} />
                   </div>
                 </div>
                 

@@ -1,3 +1,5 @@
+import { cn } from '@/lib/utils'
+
 interface PageContainerProps {
   children: React.ReactNode
   className?: string
@@ -6,15 +8,10 @@ interface PageContainerProps {
 export function PageContainer({ children, className = '' }: PageContainerProps) {
   return (
     <div
-      className={className}
-      style={{
-        maxWidth: 1800,
-        margin: '0 auto',
-        padding: '24px 32px',
-        width: '100%',
-      }}
+      className={cn('px-4 py-6 md:px-6 lg:px-8 max-w-[1800px] mx-auto w-full', className)}
     >
       {children}
     </div>
   )
 }
+

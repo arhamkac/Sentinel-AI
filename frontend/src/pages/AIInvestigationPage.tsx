@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Brain, Send, User, Bot, Sparkles, AlertTriangle, ChevronRight } from 'lucide-react'
+import { PageHeader } from '@/components/common'
 import { PageContainer } from '@/components/layout'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { aiService } from '@/services/ai.service'
@@ -107,6 +108,15 @@ export function AIInvestigationPage() {
         id: (Date.now() + 1).toString(), role: 'assistant',
         content: response.response, sources: response.sources, timestamp: new Date(),
       }])
+      
+      // If AI requests navigation
+      if (response.navigateTo) {
+        setTimeout(() => {
+          // Add a generic navigation fallback or use context router
+          // For now, window.location.href or if we have navigate hook
+          window.location.href = response.navigateTo as string
+        }, 1500)
+      }
     } catch {
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(), role: 'assistant',
@@ -123,10 +133,10 @@ export function AIInvestigationPage() {
     <PageContainer className="flex flex-col gap-6">
       
       {/* ── Header ── */}
-      <div>
-        <h1 className="text-xl font-semibold text-[var(--text-primary)]">AI Investigation</h1>
-        <p className="text-[var(--text-muted)] mt-1">Intelligent threat analysis powered by RAG-enhanced AI.</p>
-      </div>
+      <PageHeader
+        title="AI Investigation"
+        description="Intelligent threat analysis powered by RAG-enhanced AI."
+      />
 
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6" style={{ height: 'calc(100vh - 160px)', minHeight: 600 }}>
 

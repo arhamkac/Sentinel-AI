@@ -5,6 +5,8 @@ import { PageContainer } from '@/components/layout'
 import { Card, CardContent } from '@/components/ui/Card'
 import { formatDate } from '@/lib/utils'
 import type { ThreatIndicator } from '@/types'
+import { PageHeader, EmptyState } from '@/components/common'
+import { getSeverityStyles } from '@/lib/severity'
 
 const MOCK_INDICATORS: ThreatIndicator[] = [
   { id:'1', type:'ip',     value:'185.220.101.47',                           severity:'critical', confidence:0.98, tags:['TOR exit node','C2','Ransomware'],         source:'Threat Intel Feed', description:'Known Tor exit node used by ransomware groups for C2 communications.', first_seen:'2024-01-15T10:00:00Z', last_seen: new Date().toISOString() },
@@ -45,19 +47,19 @@ export function ThreatIntelPage() {
     <PageContainer className="flex flex-col gap-6">
       
       {/* ── Page Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-semibold text-[var(--text-primary)]">Threat Intel Feed</h1>
-          <p className="text-[var(--text-muted)] mt-1">Known threat indicators and adversary infrastructure.</p>
-        </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-[var(--danger-ring)] bg-[var(--danger-bg)]">
-          <Zap className="w-4 h-4 text-[var(--danger)]" />
-          <span className="text-xs font-bold text-[var(--danger)] uppercase tracking-wider">Live Feed Active</span>
-        </div>
-      </div>
+      <PageHeader
+        title="Threat Intel Feed"
+        description="Known threat indicators and adversary infrastructure."
+        actions={
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-[var(--danger-ring)] bg-[var(--danger-bg)]">
+            <Zap className="w-4 h-4 text-[var(--danger)]" />
+            <span className="text-xs font-bold text-[var(--danger)] uppercase tracking-wider">Live Feed Active</span>
+          </div>
+        }
+      />
 
       {/* ── Stats Row ── */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
         {stats.map((s, i) => (
           <Card key={i}>
             <CardContent className={`p-4 flex flex-col items-center justify-center text-center`}>
@@ -105,11 +107,7 @@ export function ThreatIntelPage() {
         {/* ── Indicator List ── */}
         <div className="divide-y divide-[var(--border)]">
           {filtered.map((ind, i) => {
-            const isCrit = ind.severity === 'critical';
-            const isHigh = ind.severity === 'high';
-            const sevColor = isCrit ? 'var(--danger)' : isHigh ? 'var(--warning)' : 'var(--primary)';
-            const sevBg = isCrit ? 'var(--danger-bg)' : isHigh ? 'var(--warning-bg)' : 'var(--primary-bg)';
-            const sevRing = isCrit ? 'var(--danger-ring)' : isHigh ? 'var(--warning-ring)' : 'var(--primary-ring)';
+            const sev = getSeverityStyles(ind.severity);
 
             return (
               <motion.div key={ind.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
@@ -118,7 +116,7 @@ export function ThreatIntelPage() {
                   {/* Left Border Accent */}
                   <div 
                     className="absolute left-0 top-0 bottom-0 w-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                    style={{ backgroundColor: sevColor }}
+                    style={{ backgroundColor: sev.color }}
                   />
 
                   {/* Icon */}
@@ -133,7 +131,7 @@ export function ThreatIntelPage() {
                       <div className="flex items-center gap-2 shrink-0">
                         <span 
                           className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border"
-                          style={{ color: sevColor, backgroundColor: sevBg, borderColor: sevRing }}
+                          style={{ color: sev.color, backgroundColor: sev.bg, borderColor: sev.ring }}
                         >
                           {ind.severity}
                         </span>
@@ -168,8 +166,11 @@ export function ThreatIntelPage() {
             )
           })}
           {filtered.length === 0 && (
-            <div className="p-8 text-center text-[var(--text-muted)] text-sm">
-              No IOCs found matching your criteria.
+            <div className="p-4">
+              <EmptyState
+                title="No indicators found"
+                description="No threat indicators match your active filters."
+              />
             </div>
           )}
         </div>

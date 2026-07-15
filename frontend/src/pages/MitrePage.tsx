@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { Search, Shield } from 'lucide-react'
 import { PageContainer } from '@/components/layout'
 import { Card, CardContent } from '@/components/ui/Card'
+import { PageHeader, EmptyState } from '@/components/common'
 import { MITRE_TACTICS } from '@/lib/constants'
 import type { MitreTechnique } from '@/types'
 
@@ -45,10 +46,10 @@ export function MitrePage() {
     <PageContainer className="flex flex-col gap-6">
       
       {/* ── Page Header ── */}
-      <div>
-        <h1 className="text-xl font-semibold text-[var(--text-primary)]">MITRE ATT&CK Matrix</h1>
-        <p className="text-[var(--text-muted)] mt-1">Adversary tactics, techniques, and procedures mapped to incidents.</p>
-      </div>
+      <PageHeader
+        title="MITRE ATT&CK Matrix"
+        description="Adversary tactics, techniques, and procedures mapped to incidents."
+      />
 
       {/* ── Filters ── */}
       <div className="flex flex-col gap-4">
@@ -158,9 +159,10 @@ export function MitrePage() {
             )
           })}
           {filtered.length === 0 && (
-            <div className="p-8 text-center text-[var(--text-muted)] text-sm border border-[var(--border)] rounded-xl bg-[var(--bg-surface)]">
-              No techniques found matching your search.
-            </div>
+            <EmptyState
+              title="No techniques found"
+              description="No techniques matched your search query."
+            />
           )}
         </div>
 
@@ -224,9 +226,11 @@ export function MitrePage() {
               </Card>
             </motion.div>
           ) : (
-            <div className="p-8 text-center text-[var(--text-muted)] text-sm border border-[var(--border)] rounded-xl bg-[var(--bg-surface)] sticky top-6">
-              Select a technique to view details.
-            </div>
+            <EmptyState
+              title="No technique selected"
+              description="Select a technique from the list to view detailed descriptions, detection methods, and mitigations."
+              className="sticky top-6"
+            />
           )}
         </div>
 

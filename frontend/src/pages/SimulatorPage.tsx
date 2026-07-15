@@ -11,6 +11,9 @@ import { simulatorService } from '@/services/simulator.service'
 import type { SimulationScenario, SimulationRun } from '@/types'
 import { TwinControls } from '@/features/simulator/components/TwinControls'
 
+import { getSeverityStyles } from '@/lib/severity'
+import { PageHeader } from '@/components/common'
+
 const ATTACK_ICONS: Record<string, React.ElementType> = {
   Ransomware: Skull,
   APT: Shield,
@@ -117,10 +120,10 @@ export function SimulatorPage() {
     <PageContainer className="flex flex-col gap-6">
       
       {/* ── Header ── */}
-      <div>
-        <h1 className="text-xl font-semibold text-[var(--text-primary)]">Attack Simulator</h1>
-        <p className="text-[var(--text-muted)] mt-1">Safely simulate real-world attack scenarios to test detection capabilities.</p>
-      </div>
+      <PageHeader
+        title="Attack Simulator"
+        description="Safely simulate real-world attack scenarios to test detection capabilities."
+      />
 
       {/* ── Warning Banner ── */}
       <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-[var(--warning-ring)] bg-[var(--warning-bg)]">
@@ -143,12 +146,7 @@ export function SimulatorPage() {
           {scenarios.map((scenario, i) => {
             const isSelected = selectedScenario?.id === scenario.id
             const Icon = ATTACK_ICONS[scenario.attack_type] ?? Activity
-            
-            const isCrit = scenario.severity === 'critical';
-            const isHigh = scenario.severity === 'high';
-            const sevColor = isCrit ? 'var(--danger)' : isHigh ? 'var(--warning)' : 'var(--primary)';
-            const sevBg = isCrit ? 'var(--danger-bg)' : isHigh ? 'var(--warning-bg)' : 'var(--primary-bg)';
-            const sevRing = isCrit ? 'var(--danger-ring)' : isHigh ? 'var(--warning-ring)' : 'var(--primary-ring)';
+            const sev = getSeverityStyles(scenario.severity)
 
             return (
               <motion.div
@@ -162,14 +160,14 @@ export function SimulatorPage() {
                   className={`relative rounded-xl border p-4 cursor-pointer transition-all duration-200 overflow-hidden ${
                     isSelected ? 'border-[var(--border-strong)] bg-[var(--bg-hover)]' : 'border-[var(--border)] bg-[var(--bg-surface)] hover:border-[var(--border-strong)]'
                   }`}
-                  style={{ borderLeft: isSelected ? `4px solid ${sevColor}` : undefined }}
+                  style={{ borderLeft: isSelected ? `4px solid ${sev.color}` : undefined }}
                 >
                   <div className="flex items-start gap-4">
                     <div 
                       className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border"
-                      style={{ background: sevBg, borderColor: sevRing }}
+                      style={{ background: sev.bg, borderColor: sev.ring }}
                     >
-                      <Icon className="w-6 h-6" style={{ color: sevColor }} />
+                      <Icon className="w-6 h-6" style={{ color: sev.color }} />
                     </div>
 
                     <div className="flex-1 min-w-0 flex flex-col gap-2">
@@ -177,7 +175,7 @@ export function SimulatorPage() {
                         <h3 className="text-base font-semibold text-[var(--text-primary)]">{scenario.name}</h3>
                         <span 
                           className="text-[10px] uppercase font-bold px-2 py-0.5 rounded border"
-                          style={{ color: sevColor, backgroundColor: sevBg, borderColor: sevRing }}
+                          style={{ color: sev.color, backgroundColor: sev.bg, borderColor: sev.ring }}
                         >
                           {scenario.severity}
                         </span>
@@ -206,7 +204,7 @@ export function SimulatorPage() {
                         onClick={e => { e.stopPropagation(); runScenario(scenario.id) }}
                         disabled={isPending}
                         className="flex flex-col items-center justify-center gap-1 shrink-0 px-6 py-4 rounded-lg font-bold text-xs transition-colors disabled:opacity-50 cursor-pointer text-white hover:brightness-110"
-                        style={{ background: sevColor }}
+                        style={{ background: sev.color }}
                       >
                         {isPending ? (
                           <RefreshCw className="w-5 h-5 animate-spin" />

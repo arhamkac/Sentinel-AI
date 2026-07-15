@@ -1,16 +1,20 @@
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, AlertTriangle, Network, Brain, Crosshair,
-  FileText, Settings, Shield, ChevronRight,
+  FileText, Settings, Shield, ChevronRight, Globe, Swords, X,
 } from 'lucide-react'
+import { useUIStore } from '@/stores/ui.store'
+import { useAuthStore } from '@/stores/auth.store'
 
 const NAV_ITEMS = [
   { to: '/dashboard',        icon: LayoutDashboard, label: 'Overview' },
   { to: '/incidents',        icon: AlertTriangle,   label: 'Incidents' },
   { to: '/attack-graph',     icon: Network,         label: 'Attack Graph' },
   { to: '/ai-investigation', icon: Brain,           label: 'AI Investigation' },
+  { to: '/mitre',            icon: Swords,          label: 'MITRE ATT&CK' },
+  { to: '/threat-intel',     icon: Globe,           label: 'Threat Intel' },
   { to: '/simulator',        icon: Crosshair,       label: 'Simulator' },
-  { to: '/reports',          icon: FileText,         label: 'Reports' },
+  { to: '/reports',          icon: FileText,        label: 'Reports' },
 ]
 
 const NAV_BOTTOM = [
@@ -19,79 +23,169 @@ const NAV_BOTTOM = [
 
 export function Sidebar() {
   const { pathname } = useLocation()
+  const { mobileSidebarOpen, setMobileSidebarOpen } = useUIStore()
+  const user = useAuthStore((s) => s.user)
 
   const isActive = (to: string) =>
     pathname === to || (to !== '/dashboard' && pathname.startsWith(to + '/'))
 
+  const handleNavClick = () => {
+    // Close mobile sidebar on navigation
+    if (mobileSidebarOpen) setMobileSidebarOpen(false)
+  }
+
+  const userInitial = user?.name?.charAt(0).toUpperCase() ?? 'S'
+  const userName = user?.name ?? 'Security Ops'
+  const userRole = user?.role ?? 'Analyst'
+
   return (
-    <aside
-      className="flex flex-col h-screen shrink-0 relative z-20"
-      style={{
-        width: 248,
-        background: 'rgba(15, 23, 42, 0.7)',
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
-        borderRight: '1px solid rgba(255, 255, 255, 0.05)',
-      }}
-    >
-      {/* ── Logo ── */}
+    <>
+      {/* Mobile overlay */}
       <div
-        className="flex items-center gap-3 shrink-0"
-        style={{ height: 56, padding: '0 20px' }}
+        className={`sidebar-overlay ${mobileSidebarOpen ? 'open' : ''} md:hidden`}
+        onClick={() => setMobileSidebarOpen(false)}
+        aria-hidden="true"
+      />
+
+      <aside
+        className={`flex flex-col h-screen shrink-0 relative z-50 sidebar-mobile ${mobileSidebarOpen ? 'open' : ''}`}
+        style={{
+          width: 248,
+          background: 'rgba(15, 23, 42, 0.95)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          borderRight: '1px solid rgba(255, 255, 255, 0.05)',
+        }}
+        role="navigation"
+        aria-label="Main navigation"
       >
+        {/* ── Logo ── */}
         <div
-          className="flex items-center justify-center rounded-lg shrink-0"
-          style={{
-            width: 32, height: 32,
-            background: 'var(--primary-bg)',
-            border: '1px solid var(--primary-ring)',
-          }}
+          className="flex items-center gap-3 shrink-0"
+          style={{ height: 56, padding: '0 20px' }}
         >
-          <Shield style={{ width: 16, height: 16, color: 'var(--primary)' }} strokeWidth={1.8} />
-        </div>
-        <div>
-          <p style={{
-            fontSize: 14, fontWeight: 600,
-            color: 'var(--text-primary)',
-            lineHeight: 1.2, letterSpacing: '-0.01em',
-          }}>
-            Sentinel AI
-          </p>
-          <p style={{
-            fontSize: 11,
-            color: 'var(--text-muted)',
-            lineHeight: 1.2,
-          }}>
-            SOC Platform
-          </p>
-        </div>
-      </div>
+          <div
+            className="flex items-center justify-center rounded-lg shrink-0"
+            style={{
+              width: 32, height: 32,
+              background: 'var(--primary-bg)',
+              border: '1px solid var(--primary-ring)',
+            }}
+          >
+            <Shield style={{ width: 16, height: 16, color: 'var(--primary)' }} strokeWidth={1.8} />
+          </div>
+          <div>
+            <p style={{
+              fontSize: 14, fontWeight: 600,
+              color: 'var(--text-primary)',
+              lineHeight: 1.2, letterSpacing: '-0.01em',
+            }}>
+              Sentinel AI
+            </p>
+            <p style={{
+              fontSize: 11,
+              color: 'var(--text-muted)',
+              lineHeight: 1.2,
+            }}>
+              SOC Platform
+            </p>
+          </div>
 
-      {/* ── Divider ── */}
-      <div style={{ height: 1, background: 'var(--border)', margin: '0 16px' }} />
-
-      {/* ── Main Navigation ── */}
-      <nav className="flex-1 overflow-y-auto" style={{ padding: '12px 12px' }}>
-        <div style={{ marginBottom: 8 }}>
-          <span style={{
-            fontSize: 11, fontWeight: 500,
-            color: 'var(--text-muted)',
-            padding: '0 8px',
-            letterSpacing: '0.04em',
-            textTransform: 'uppercase',
-          }}>
-            Navigation
-          </span>
+          {/* Mobile close button */}
+          <button
+            className="md:hidden ml-auto p-1 rounded-md text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors"
+            onClick={() => setMobileSidebarOpen(false)}
+            aria-label="Close navigation"
+          >
+            <X style={{ width: 18, height: 18 }} />
+          </button>
         </div>
 
-        <div className="flex flex-col" style={{ gap: 2 }}>
-          {NAV_ITEMS.map(({ to, icon: Icon, label }) => {
+        {/* ── Divider ── */}
+        <div style={{ height: 1, background: 'var(--border)', margin: '0 16px' }} />
+
+        {/* ── Main Navigation ── */}
+        <nav className="flex-1 overflow-y-auto" style={{ padding: '12px 12px' }}>
+          <div style={{ marginBottom: 8 }}>
+            <span style={{
+              fontSize: 11, fontWeight: 500,
+              color: 'var(--text-muted)',
+              padding: '0 8px',
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+            }}>
+              Navigation
+            </span>
+          </div>
+
+          <div className="flex flex-col" style={{ gap: 2 }}>
+            {NAV_ITEMS.map(({ to, icon: Icon, label }) => {
+              const active = isActive(to)
+              return (
+                <NavLink
+                  key={to}
+                  to={to}
+                  onClick={handleNavClick}
+                  aria-current={active ? 'page' : undefined}
+                  className="group relative flex items-center rounded-lg transition-colors duration-100"
+                  style={{
+                    height: 36,
+                    padding: '0 8px',
+                    gap: 10,
+                    background: active ? 'var(--primary-bg)' : 'transparent',
+                    color: active ? 'var(--primary)' : 'var(--text-secondary)',
+                    textDecoration: 'none',
+                  }}
+                  onMouseEnter={e => {
+                    if (!active) e.currentTarget.style.background = 'var(--bg-hover)'
+                  }}
+                  onMouseLeave={e => {
+                    if (!active) e.currentTarget.style.background = 'transparent'
+                  }}
+                >
+                  {active && (
+                    <span
+                      className="absolute left-0 rounded-r"
+                      style={{
+                        top: 6, bottom: 6, width: 3,
+                        background: 'var(--primary)',
+                        borderRadius: '0 3px 3px 0',
+                      }}
+                    />
+                  )}
+                  <Icon style={{ width: 16, height: 16, flexShrink: 0 }} />
+                  <span style={{
+                    fontSize: 13, fontWeight: active ? 500 : 400,
+                    whiteSpace: 'nowrap',
+                  }}>
+                    {label}
+                  </span>
+                  {active && (
+                    <ChevronRight
+                      style={{
+                        width: 14, height: 14,
+                        marginLeft: 'auto',
+                        opacity: 0.5,
+                      }}
+                    />
+                  )}
+                </NavLink>
+              )
+            })}
+          </div>
+        </nav>
+
+        {/* ── Bottom Nav ── */}
+        <div style={{ padding: '8px 12px', borderTop: '1px solid var(--border)' }}>
+          {NAV_BOTTOM.map(({ to, icon: Icon, label }) => {
             const active = isActive(to)
             return (
               <NavLink
                 key={to}
                 to={to}
-                className="group relative flex items-center rounded-lg transition-colors duration-100"
+                onClick={handleNavClick}
+                aria-current={active ? 'page' : undefined}
+                className="flex items-center rounded-lg transition-colors duration-100"
                 style={{
                   height: 36,
                   padding: '0 8px',
@@ -107,113 +201,59 @@ export function Sidebar() {
                   if (!active) e.currentTarget.style.background = 'transparent'
                 }}
               >
-                {active && (
-                  <span
-                    className="absolute left-0 rounded-r"
-                    style={{
-                      top: 6, bottom: 6, width: 3,
-                      background: 'var(--primary)',
-                      borderRadius: '0 3px 3px 0',
-                    }}
-                  />
-                )}
                 <Icon style={{ width: 16, height: 16, flexShrink: 0 }} />
-                <span style={{
-                  fontSize: 13, fontWeight: active ? 500 : 400,
-                  whiteSpace: 'nowrap',
-                }}>
+                <span style={{ fontSize: 13, fontWeight: active ? 500 : 400 }}>
                   {label}
                 </span>
-                {active && (
-                  <ChevronRight
-                    style={{
-                      width: 14, height: 14,
-                      marginLeft: 'auto',
-                      opacity: 0.5,
-                    }}
-                  />
-                )}
               </NavLink>
             )
           })}
-        </div>
-      </nav>
 
-      {/* ── Bottom Nav ── */}
-      <div style={{ padding: '8px 12px', borderTop: '1px solid var(--border)' }}>
-        {NAV_BOTTOM.map(({ to, icon: Icon, label }) => {
-          const active = isActive(to)
-          return (
-            <NavLink
-              key={to}
-              to={to}
-              className="flex items-center rounded-lg transition-colors duration-100"
-              style={{
-                height: 36,
-                padding: '0 8px',
-                gap: 10,
-                background: active ? 'var(--primary-bg)' : 'transparent',
-                color: active ? 'var(--primary)' : 'var(--text-secondary)',
-                textDecoration: 'none',
-              }}
-              onMouseEnter={e => {
-                if (!active) e.currentTarget.style.background = 'var(--bg-hover)'
-              }}
-              onMouseLeave={e => {
-                if (!active) e.currentTarget.style.background = 'transparent'
-              }}
-            >
-              <Icon style={{ width: 16, height: 16, flexShrink: 0 }} />
-              <span style={{ fontSize: 13, fontWeight: active ? 500 : 400 }}>
-                {label}
-              </span>
-            </NavLink>
-          )
-        })}
-
-        {/* ── User Block ── */}
-        <div
-          className="flex items-center rounded-lg"
-          style={{
-            marginTop: 8,
-            padding: '8px',
-            gap: 10,
-            background: 'var(--bg-inset)',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-lg)',
-          }}
-        >
+          {/* ── User Block ── */}
           <div
-            className="flex items-center justify-center rounded-md shrink-0"
+            className="flex items-center rounded-lg"
             style={{
-              width: 32, height: 32,
-              background: 'var(--primary-bg)',
-              border: '1px solid var(--primary-ring)',
-              fontSize: 13, fontWeight: 600,
-              color: 'var(--primary)',
+              marginTop: 8,
+              padding: '8px',
+              gap: 10,
+              background: 'var(--bg-inset)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-lg)',
             }}
           >
-            S
-          </div>
-          <div style={{ minWidth: 0 }}>
-            <p style={{
-              fontSize: 13, fontWeight: 500,
-              color: 'var(--text-primary)',
-              lineHeight: 1.3,
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            }}>
-              Security Ops
-            </p>
-            <p style={{
-              fontSize: 11,
-              color: 'var(--text-muted)',
-              lineHeight: 1.3,
-            }}>
-              Analyst
-            </p>
+            <div
+              className="flex items-center justify-center rounded-md shrink-0"
+              style={{
+                width: 32, height: 32,
+                background: 'var(--primary-bg)',
+                border: '1px solid var(--primary-ring)',
+                fontSize: 13, fontWeight: 600,
+                color: 'var(--primary)',
+              }}
+            >
+              {userInitial}
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <p style={{
+                fontSize: 13, fontWeight: 500,
+                color: 'var(--text-primary)',
+                lineHeight: 1.3,
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              }}>
+                {userName}
+              </p>
+              <p style={{
+                fontSize: 11,
+                color: 'var(--text-muted)',
+                lineHeight: 1.3,
+                textTransform: 'capitalize',
+              }}>
+                {userRole}
+              </p>
+            </div>
           </div>
         </div>
-      </div>
-    </aside>
+      </aside>
+    </>
   )
 }

@@ -1,3 +1,6 @@
+import { useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { incidentsService } from '@/services/incidents.service'
 import {
   Shield, Activity, Target, ShieldAlert,
   TrendingUp, TrendingDown, ArrowRight,
@@ -9,6 +12,7 @@ import {
 import { PageContainer } from '@/components/layout'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { useEventsStore } from '@/stores/events.store'
+import { PageHeader } from '@/components/common'
 
 // ─── Mock Data ──────────────────────────────────────────────────
 const chartData = [
@@ -21,15 +25,18 @@ const chartData = [
   { time: '24:00', events: 230, threats: 24 },
 ]
 
-const recentIncidents = [
-  { id: 'INC-2024-089', title: 'Suspicious Lateral Movement', severity: 'critical', time: '10m ago' },
-  { id: 'INC-2024-088', title: 'Multiple Failed Authentications', severity: 'high', time: '45m ago' },
-  { id: 'INC-2024-087', title: 'Unusual Data Exfiltration', severity: 'high', time: '2h ago' },
-  { id: 'INC-2024-086', title: 'Malware Signature Detected', severity: 'medium', time: '4h ago' },
-]
 
 export function DashboardPage() {
+  const navigate = useNavigate()
   const { liveEvents } = useEventsStore()
+  
+  const { data: incidentsData } = useQuery({
+    queryKey: ['incidents', { page: 1, page_size: 5 }],
+    queryFn: () => incidentsService.list({ page: 1, page_size: 5 }),
+  })
+  
+  const recentIncidents = incidentsData?.items ?? []
+
   
   const criticalCount = liveEvents.filter(e => e.severity === 'critical').length
   const hasCritical = criticalCount > 0
@@ -38,12 +45,10 @@ export function DashboardPage() {
     <PageContainer className="flex flex-col gap-6">
       
       {/* ── Page Header ── */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-[var(--text-primary)]">Security Overview</h1>
-          <p className="text-[var(--text-muted)] mt-1">Real-time threat monitoring and organizational security posture.</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Security Overview"
+        description="Real-time threat monitoring and organizational security posture."
+      />
 
       {/* ── KPI Row ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -176,7 +181,10 @@ export function DashboardPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Active Incidents</CardTitle>
-              <button className="text-xs text-[var(--primary)] font-medium hover:underline flex items-center gap-1">
+              <button
+                onClick={() => navigate('/incidents')}
+                className="text-xs text-[var(--primary)] font-medium hover:underline flex items-center gap-1 cursor-pointer bg-transparent border-none outline-none"
+              >
                 View all <ArrowRight className="w-3 h-3" />
               </button>
             </CardHeader>
@@ -191,7 +199,9 @@ export function DashboardPage() {
                         <p className="text-xs text-[var(--text-muted)] font-mono mt-0.5">{inc.id}</p>
                       </div>
                     </div>
-                    <span className="text-xs text-[var(--text-muted)]">{inc.time}</span>
+                    <span className="text-xs text-[var(--text-muted)]">
+                      {new Date(inc.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
                   </div>
                 ))}
               </div>

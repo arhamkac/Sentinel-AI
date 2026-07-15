@@ -18,14 +18,14 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="text-xs font-medium text-[#94A3B8] uppercase tracking-wider"
+            className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider"
           >
             {label}
           </label>
         )}
         <div className="relative flex items-center">
           {leftIcon && (
-            <span className="absolute left-3 text-[#64748B] pointer-events-none flex items-center">
+            <span className="absolute left-3 text-[var(--text-muted)] pointer-events-none flex items-center">
               {leftIcon}
             </span>
           )}
@@ -33,13 +33,13 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             className={cn(
-              'w-full h-10 rounded-lg bg-[#071022] border border-[#162030] text-[#E2E8F0] text-sm',
-              'placeholder:text-[#3d566e] pl-3 pr-3',
+              'w-full h-10 rounded-lg bg-[var(--bg-inset)] border border-[var(--border)] text-[var(--text-primary)] text-sm',
+              'placeholder:text-[var(--text-muted)] pl-3 pr-3',
               'transition-all duration-150',
-              'focus:outline-none focus:ring-2 focus:ring-[#00E5FF]/30 focus:border-[#00E5FF]/40',
-              'hover:border-[#243650]',
+              'focus:outline-none focus:ring-2 focus:ring-[var(--primary-ring)] focus:border-[var(--primary-dim)]',
+              'hover:border-[var(--border-strong)]',
               'disabled:opacity-50 disabled:cursor-not-allowed',
-              error && 'border-[#FF4D6D]/50 focus:ring-[#FF4D6D]/30',
+              error && 'border-[var(--danger)] focus:ring-[var(--danger-ring)]',
               leftIcon && 'pl-10',
               rightIcon && 'pr-10',
               className
@@ -47,13 +47,13 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             {...props}
           />
           {rightIcon && (
-            <span className="absolute right-3 text-[#3d566e] flex items-center">
+            <span className="absolute right-3 text-[var(--text-muted)] flex items-center">
               {rightIcon}
             </span>
           )}
         </div>
-        {error && <p className="text-xs text-[#FF4D6D]">{error}</p>}
-        {hint && !error && <p className="text-xs text-[#3d566e]">{hint}</p>}
+        {error && <p className="text-xs text-[var(--danger)]">{error}</p>}
+        {hint && !error && <p className="text-xs text-[var(--text-muted)]">{hint}</p>}
       </div>
     )
   }
